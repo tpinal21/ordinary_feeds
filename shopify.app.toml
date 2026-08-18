@@ -1,0 +1,41 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "3b9e30f80c88e0b9298e659620b2bf9b"
+name = "insta-feeds"
+application_url = "https://insta-feeds.vercel.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-07"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
+[access.admin]
+direct_api_mode = "offline"
+embedded_app_direct_api_access = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_themes,write_metaobject_definitions,write_metaobjects,write_products,write_themes"
+
+[auth]
+redirect_urls = [ "https://insta-feeds.vercel.app/api/auth" ]
+
+[shop.metafields.app.insta_feed_posts]
+type = "json"
+name = "Instagram feed cache"
+description = "Cached Instagram posts rendered by the storefront feed block."
+
+[shop.metafields.app.settings]
+type = "json"
+name = "App settings"
+description = "Carousel and feed display settings configured in the app."

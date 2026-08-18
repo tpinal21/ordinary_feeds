@@ -1,0 +1,147 @@
+.insta-carousel {
+  position: relative;
+  width: 100%;
+  padding: 1rem 0;
+}
+
+.insta-carousel__heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+.insta-carousel__viewport {
+  overflow: hidden;
+}
+
+.insta-carousel__container {
+  display: flex;
+  touch-action: pan-y pinch-zoom;
+  margin-left: calc(var(--insta-gap, 12px) * -1);
+}
+
+.insta-carousel__slide {
+  flex: 0 0 calc(100% / var(--insta-per-view, 4));
+  min-width: 0;
+  padding-left: var(--insta-gap, 12px);
+}
+
+.insta-carousel__media {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  /* border-radius: var(--insta-radius, 8px); */
+  background: #f2f2f2;
+  cursor: pointer;
+}
+
+.insta-carousel__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.insta-carousel__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.insta-carousel__progress-bar {
+  width: 0;
+  height: 100%;
+  background: #fff;
+}
+
+.insta-carousel__mute {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(82, 82, 82, 0.2);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.insta-carousel__media:hover .insta-carousel__mute {
+  opacity: 1;
+}
+
+.insta-carousel__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Show the muted icon by default; swap to unmuted when the card is unmuted. */
+.insta-carousel__icon--unmuted {
+  display: none;
+}
+
+.insta-carousel__slide.is-unmuted .insta-carousel__icon--muted {
+  display: none;
+}
+
+.insta-carousel__slide.is-unmuted .insta-carousel__icon--unmuted {
+  display: block;
+}
+
+.insta-carousel__btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  touch-action: manipulation;
+  z-index: 1;
+}
+
+.insta-carousel__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.insta-carousel__btn--prev {
+  left: -12px;
+}
+
+.insta-carousel__btn--next {
+  right: -12px;
+}
+
+.insta-carousel__btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.insta-carousel__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

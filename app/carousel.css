@@ -1,0 +1,53 @@
+/**
+ * Feed carousel sizing — deliberately plain CSS.
+ *
+ * Everything the merchant configures arrives as a custom property set on the
+ * carousel root, so these rules work unchanged in the app preview and in the
+ * theme extension, where there is no React to compute widths:
+ *
+ *   --insta-per-view   slides visible at --insta-design-width
+ *   --insta-gap        space between two neighbouring slides
+ *   --insta-radius     slide corner radius
+ *
+ * Keep this file free of Tailwind so it stays copy-pasteable into the
+ * extension's own carousel.css.
+ */
+.insta-carousel {
+  --insta-per-view: 4;
+  --insta-gap: 0px;
+  --insta-radius: 0px;
+
+  /* The width --insta-per-view is authored against. A slide keeps this width on
+     every screen above the mobile breakpoint, so wider viewports reveal more
+     slides instead of stretching each one. */
+  --insta-design-width: 1080px;
+  --insta-slide-width: calc(var(--insta-design-width) / var(--insta-per-view));
+
+  /* Breakpoints follow the carousel's own width rather than the window's: in
+     the app it renders inside a resizable preview frame, and on the storefront
+     the block is full-width, so both end up agreeing. */
+  container-type: inline-size;
+  width: 100%;
+}
+
+.insta-carousel__slide {
+  flex: 0 0 var(--insta-slide-width);
+  min-width: 0;
+  /* Half on each side, so the space between two slides adds up to --insta-gap
+     and the strip stays centred. */
+  padding-inline: calc(var(--insta-gap) / 2);
+  transition:
+    flex-basis 150ms ease,
+    padding 150ms ease;
+}
+
+/* Phones ignore --insta-per-view — anything denser than two is unusable. */
+@container (max-width: 424px) {
+  .insta-carousel__slide {
+    flex-basis: 50%;
+  }
+}
+
+.insta-carousel__media {
+  border-radius: var(--insta-radius);
+}
