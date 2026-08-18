@@ -25,6 +25,16 @@ import { Controller, useForm, useFormContext } from "react-hook-form";
 import { useLoaderData, useParams, useRevalidator } from "react-router";
 
 export async function loader({ request, params }) {
+  const isCreateRoute = [
+    "create-carousel",
+    "create-popup",
+    "create-grid",
+  ].includes(params.id);
+
+  if (isCreateRoute) {
+    return { feed: {} };
+  }
+
   let feed;
 
   try {
@@ -43,6 +53,12 @@ export async function loader({ request, params }) {
 
 export default function FeedsEdit() {
   const { id } = useParams();
+
+  const isCreateRoute = [
+    "create-carousel",
+    "create-popup",
+    "create-grid",
+  ].includes(id);
 
   const { feed: feedDetails } = useLoaderData();
 
@@ -218,8 +234,15 @@ export default function FeedsEdit() {
                 />
               </div>
               <div className="flex items-start gap-4">
-                <span className="w-40 mt-1.5">
+                <span className="w-40 mt-1.5 gap-1 inline-flex items-center">
                   <s-text>Sliders per view</s-text>
+                  <button type="button" interestfor="info-tooltip">
+                    <s-icon type="info" tone="auto" />
+                  </button>
+                  <s-tooltip id="info-tooltip">
+                    Sets the slide width at 1080px wide. Wider screens keep that
+                    width and show more slides; phones always show 2.
+                  </s-tooltip>
                 </span>
                 <div className="max-w-56 w-full">
                   <Controller
@@ -241,10 +264,6 @@ export default function FeedsEdit() {
                       </s-select>
                     )}
                   />
-                  <p className="text-xs text-neutral-500 mt-1">
-                    Sets the slide width at 1080px wide. Wider screens keep that
-                    width and show more slides; phones always show 2.
-                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-4">

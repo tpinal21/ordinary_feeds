@@ -2,7 +2,7 @@
 
 client_id = "3b9e30f80c88e0b9298e659620b2bf9b"
 name = "insta-feeds"
-application_url = "https://insta-feeds.vercel.app"
+application_url = "https://ordinary-feeds.vercel.app/"
 embedded = true
 
 [build]

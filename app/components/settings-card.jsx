@@ -9,13 +9,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "app/components/ui/tabs";
-import { useMutation } from "app/hooks/useMutation";
 import { enter, enterFast, stagger } from "app/lib/animations";
-import { apiFetch } from "app/lib/api-client";
-import { FEEDS_KEY } from "app/lib/feeds";
-import { useFieldArray, useForm } from "react-hook-form";
-import { mutate } from "swr";
-import AppBridgeForm from "./app-bridge-form";
 
 const TABS = [
   { value: "home", label: "Home page" },
@@ -30,45 +24,11 @@ const FEED_STYLES = {
   POPUP: { label: "POPUP", icon: "layout-popup" },
 };
 
-const makeFeed = (label, type) => ({
-  label: label,
-  type: type,
-  settings: type === "CAROUSEL" ? { ...CAROUSEL_FEED_DEFAULTS } : {},
-});
-
 export default function SettingCard({ feeds }) {
-  const formMethods = useForm({
-    // `values` (not `defaultValues`) so a refreshed feed list re-seeds the
-    // form — RHF deep-compares, so it only resets when the data really changed.
-    values: {
-      feeds: feeds?.map((feed) => ({
-        ...feed,
-        settings: { ...CAROUSEL_FEED_DEFAULTS, ...JSON.parse(feed.settings) },
-      })),
-    },
-  });
-
-  const { control } = formMethods;
-
-  const {
-    fields: feedFields,
-    append,
-    remove,
-  } = useFieldArray({ control, name: "feeds", keyName: "field_id" });
-
-  const { trigger: saveFeeds, isMutating: isSaving } = useMutation(
-    "save-feeds",
-    ({ arg }) => apiFetch("/api/feeds", { method: "POST", body: arg }),
-    {
-      onSuccess: (res) => {
-        shopify.toast.show(
-          res.success ? "Settings saved" : "Failed to save settings",
-          { isError: !res.success },
-        );
-        mutate(FEEDS_KEY);
-      },
-    },
-  );
+  const feedFields = feeds?.map((feed) => ({
+    ...feed,
+    settings: { ...CAROUSEL_FEED_DEFAULTS, ...JSON.parse(feed.settings) },
+  }));
 
   return (
     <Tabs defaultValue="home" className="w-full">
@@ -96,13 +56,7 @@ export default function SettingCard({ feeds }) {
             <div className="inline-flex justify-between items-center">
               <s-heading>Home page blocks</s-heading>
               <div className="inline-flex gap-1 items-center">
-                <AddFeedButton
-                  onAdd={(type) =>
-                    append(
-                      makeFeed(`${type}_HP_${feedFields.length + 1}`, type),
-                    )
-                  }
-                />
+                <AddFeedButton />
               </div>
             </div>
             <s-paragraph>
@@ -112,36 +66,22 @@ export default function SettingCard({ feeds }) {
           </CardHeader>
 
           <CardContent>
-            <AppBridgeForm
-              {...formMethods}
-              onSubmit={({ feeds }) =>
-                saveFeeds(
-                  feeds.map((feed) => ({
-                    ...feed,
-                    gallery: feed.gallery.id,
-                  })),
-                )
-              }
-            >
-              <div className="flex flex-col gap-3">
-                {feedFields.length === 0 ? (
-                  <div className="border border-dashed border-neutral-300 rounded-md p-6 text-center text-sm text-neutral-500">
-                    No feeds yet. Use “Add feed” to place your first Instagram
-                    feed on this page.
-                  </div>
-                ) : (
-                  feedFields.map((feed, index) => (
-                    <CarouselFeedCard
-                      key={feed.field_id}
-                      index={index}
-                      control={control}
-                      feed={feed}
-                      onRemove={() => remove(index)}
-                    />
-                  ))
-                )}
-              </div>
-            </AppBridgeForm>
+            <div className="flex flex-col gap-3">
+              {feedFields.length === 0 ? (
+                <div className="border border-dashed border-neutral-300 rounded-md p-6 text-center text-sm text-neutral-500">
+                  No feeds yet. Use “Add feed” to place your first Instagram
+                  feed on this page.
+                </div>
+              ) : (
+                feedFields.map((feed) => (
+                  <CarouselFeedCard
+                    key={feed.field_id}
+                    feed={feed}
+                    onRemove={() => {}}
+                  />
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
@@ -149,7 +89,7 @@ export default function SettingCard({ feeds }) {
   );
 }
 
-function AddFeedButton({ onAdd }) {
+const AddFeedButton = () => {
   return (
     <>
       <s-button commandfor="add-feed-popover" icon="plus" variant="primary">
@@ -163,7 +103,7 @@ function AddFeedButton({ onAdd }) {
               type="button"
               key={type}
               className="inline-flex gap-0.5 px-1.5 cursor-pointer rounded-md hover:bg-neutral-100 py-0.5"
-              onClick={() => onAdd(type)}
+              onClick={() => {}}
               commandfor="add-feed-popover"
               command="--hide"
             >
@@ -176,4 +116,4 @@ function AddFeedButton({ onAdd }) {
       </s-popover>
     </>
   );
-}
+};
