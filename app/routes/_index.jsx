@@ -22,31 +22,65 @@ export default function Index() {
   });
 
   return (
-    <div className="max-w-249.5 mx-auto p-4 flex flex-col">
-      <div className={`flex justify-between items-start ${enter}`}>
+    <s-page heading="" inlineSize="base">
+      <div className={`flex flex-col mb-3 items-start ${enter}`}>
         <h1 className="text-xl font-semibold mb-2">
           Hey {instagramAccount?.username} 👋🏻!
         </h1>
+        <s-text
+          className={`text-sm text-neutral-500 mb-4 ${enter}`}
+          style={delay(75)}
+        >
+          Set up your Instagram feeds in minutes
+        </s-text>
+      </div>
+      <s-query-container>
+        <s-grid
+          gridTemplateColumns="@container (inline-size > 640px) 1fr 1fr 1fr 1fr, 1fr 1fr"
+          gap="base"
+        >
+          <s-section>
+            <s-stack direction="block" gap="small">
+              <s-heading>Clicks</s-heading>
+              <s-text fontVariantNumeric="tabular-nums">102</s-text>
+            </s-stack>
+          </s-section>
+          <s-section>
+            <s-stack direction="block" gap="small">
+              <s-heading>Impressions</s-heading>
+              <s-text fontVariantNumeric="tabular-nums">12,123</s-text>
+            </s-stack>
+          </s-section>
+          <s-section>
+            <s-stack direction="block" gap="small">
+              <s-heading>Impressions</s-heading>
+              <s-text fontVariantNumeric="tabular-nums">12,123</s-text>
+            </s-stack>
+          </s-section>
+          <s-section>
+            <s-stack direction="block" gap="small">
+              <s-heading>Impressions</s-heading>
+              <s-text fontVariantNumeric="tabular-nums">12,123</s-text>
+            </s-stack>
+          </s-section>
+        </s-grid>
+      </s-query-container>
+
+      <div className="mt-4">
+        <s-divider color="strong" />
       </div>
 
-      <p className={`text-sm text-neutral-500 mb-4 ${enter}`} style={delay(75)}>
-        Set up your Instagram feeds in minutes
-      </p>
-      <div className="grid gap-4 grid-cols-[auto_326px]">
+      <div className="grid gap-4 grid-cols-1 mt-4 md:grid-cols-[auto_326px]">
         <div className="min-w-0">
           <SettingCard feeds={feedsData?.data} />
         </div>
-        <div>
+        <div className="order-first md:order-0">
           <div className="sticky top-4 flex flex-col gap-4">
-            <div className={enter} style={delay(200)}>
-              <AccountInformationCard instagramAccount={instagramAccount} />
-            </div>
-            <div className={enter} style={delay(300)}>
-              <ThemeBlocksCard />
-            </div>
+            <AccountInformationCard instagramAccount={instagramAccount} />
+            <ThemeBlocksCard />
           </div>
         </div>
       </div>
-    </div>
+    </s-page>
   );
 }
