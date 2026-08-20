@@ -323,8 +323,8 @@ const GallerySelect = ({ name, onChange: setMedia }) => {
   );
 
   const galleryList = fetchingGalleries
-    ? [{ title: "Loading galleries...", id: getValues(name) }]
-    : galleriesData?.data || [];
+    ? [{ label: "Loading galleries...", value: getValues(name) }]
+    : (galleriesData?.data || []).map((g) => ({ label: g.title, value: g.id }));
 
   return (
     <div className="inline-flex gap-4">
@@ -342,7 +342,7 @@ const GallerySelect = ({ name, onChange: setMedia }) => {
             value={value}
             onValueChange={(val) => {
               onChange(val);
-              setMedia(galleryList.find((g) => g.id === val)?.media || []);
+              setMedia(galleryList.find((g) => g.value === val)?.media || []);
             }}
             disabled={fetchingGalleries}
           >
@@ -353,11 +353,11 @@ const GallerySelect = ({ name, onChange: setMedia }) => {
               <SelectGroup>
                 {galleryList.map((gallery) => (
                   <SelectItem
-                    key={gallery.id}
-                    value={gallery.id}
+                    key={gallery.value}
+                    value={gallery.value}
                     className="flex-wrap"
                   >
-                    {gallery.title}
+                    {gallery.label}
                   </SelectItem>
                 ))}
               </SelectGroup>

@@ -1,5 +1,5 @@
 import { readItem } from "@directus/sdk";
-import { FEEDS, SHOPS } from "app/lib/constants";
+import { SHOPS } from "app/lib/constants";
 import directus from "../directus.server";
 
 const FEED_FIELDS = [
@@ -9,9 +9,10 @@ const FEED_FIELDS = [
 ];
 
 // Flattens Directus' nested media rows into the shape the client renders.
-export function toFeed({ id, type, label, settings, gallery }) {
+export function toFeed({ id, page, type, label, settings, gallery }) {
   return {
     id,
+    page,
     type,
     label,
     settings,

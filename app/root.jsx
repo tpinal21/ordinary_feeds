@@ -1,14 +1,15 @@
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
+import { ScrollArea } from "app/components/ui/scroll-area";
 import { getShopDetails, toFeed } from "app/lib/shops.server";
 import { authenticate } from "app/shopify.server";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
+import { useEffect, useRef } from "react";
 import {
   Links,
   Meta,
   Outlet,
-  redirect,
-  replace,
   Scripts,
   ScrollRestoration,
   useLoaderData,
@@ -17,8 +18,6 @@ import {
   useRouteError,
 } from "react-router";
 import "./app.css";
-import { useAppBridge } from "@shopify/app-bridge-react";
-import { useEffect, useRef } from "react";
 
 const LIBRARY_AUTH_PATHS = ["/auth/session-token", "/auth/exit-iframe"];
 
@@ -77,7 +76,9 @@ export default function App() {
                 <s-link href="/manage-posts">Manage Posts</s-link>
               </s-app-nav>
               <LoadingProgressBarProvider />
-              <Outlet />
+              <ScrollArea>
+                <Outlet />
+              </ScrollArea>
             </AppProvider>
           )}
         </NuqsAdapter>
