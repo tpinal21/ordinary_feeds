@@ -24,17 +24,7 @@ import { useState } from "react";
 import { Controller, useForm, useFormContext } from "react-hook-form";
 import { useLoaderData, useParams, useRevalidator } from "react-router";
 
-export async function loader({ request, params }) {
-  const isCreateRoute = [
-    "create-carousel",
-    "create-popup",
-    "create-grid",
-  ].includes(params.id);
-
-  if (isCreateRoute) {
-    return { feed: {} };
-  }
-
+export async function loader({ params }) {
   let feed;
 
   try {
@@ -53,12 +43,6 @@ export async function loader({ request, params }) {
 
 export default function FeedsEdit() {
   const { id } = useParams();
-
-  const isCreateRoute = [
-    "create-carousel",
-    "create-popup",
-    "create-grid",
-  ].includes(id);
 
   const { feed: feedDetails } = useLoaderData();
 
@@ -248,20 +232,36 @@ export default function FeedsEdit() {
                   <Controller
                     name="settings.slides_per_view"
                     control={control}
-                    render={({ field }) => (
-                      <s-select
+                    render={({ field: { value, onChange, ...field } }) => (
+                      <Select
+                        items={[3, 4, 5, 6, 7, 8]}
                         {...field}
-                        label="Sliders per view"
-                        labelAccessibilityVisibility="exclusive"
-                        onChange={(e) => field.onChange(+e.target.value)}
+                        value={value}
+                        onValueChange={(val) => {
+                          onChange(val);
+                          setMedia(
+                            galleryList.find((g) => g.value === val)?.media ||
+                              [],
+                          );
+                        }}
                       >
-                        <s-option value="3">3</s-option>
-                        <s-option value="4">4</s-option>
-                        <s-option value="5">5</s-option>
-                        <s-option value="6">6</s-option>
-                        <s-option value="7">7</s-option>
-                        <s-option value="8">8</s-option>
-                      </s-select>
+                        <SelectTrigger className="w-full max-w-56">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="w-(--anchor-width)">
+                          <SelectGroup>
+                            {[3, 4, 5, 6, 7, 8].map((num) => (
+                              <SelectItem
+                                key={num}
+                                value={num}
+                                className="flex-wrap"
+                              >
+                                {num}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                     )}
                   />
                 </div>
@@ -349,7 +349,7 @@ const GallerySelect = ({ name, onChange: setMedia }) => {
             <SelectTrigger id="gallery-select" className="w-full max-w-56">
               <SelectValue placeholder="Select gallery" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="w-(--anchor-width)">
               <SelectGroup>
                 {galleryList.map((gallery) => (
                   <SelectItem

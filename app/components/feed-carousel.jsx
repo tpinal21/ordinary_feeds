@@ -23,6 +23,34 @@ const carouselVars = (settings) => ({
 export function FeedCarousel({ media = [], settings }) {
   const [api, setApi] = useState(null);
 
+  // Slide widths animate when the merchant changes "slides per view" (see
+  // carousel.css). Embla reads the slides with offsetWidth once and derives the
+  // distance it shifts them by to close the loop from that measurement; its own
+  // ResizeObserver gives up re-measuring as soon as a frame moves a slide less
+  // than half a pixel, which is the whole tail of the easing. The fraction it
+  // misses is multiplied by the slide count and lands entirely on the seam
+  // between the last and the first slide, so re-measure once the width has
+  // actually settled.
+  useEffect(() => {
+    if (!api) return;
+
+    const container = api.containerNode();
+    let queued = false;
+
+    const remeasure = (event) => {
+      // Slides only — PostCard has transitions of its own.
+      if (event.target.parentElement !== container || queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        api.reInit();
+      });
+    };
+
+    container.addEventListener("transitionend", remeasure);
+    return () => container.removeEventListener("transitionend", remeasure);
+  }, [api]);
+
   // Drive the auto-scroll plugin from this feed's own setting.
   useEffect(() => {
     const autoScroll = api?.plugins()?.autoScroll;
@@ -51,9 +79,6 @@ export function FeedCarousel({ media = [], settings }) {
         }),
       ]}
     >
-      {/* `safe` centering: centers the slides when they don't fill the
-          viewport, and falls back to start-alignment once they overflow so
-          scrolling still reaches the first slide. */}
       <CarouselContent className="ml-0 justify-center-safe">
         {media.map((m, ind) => (
           <CarouselItem key={m.id || ind} className="insta-carousel__slide">

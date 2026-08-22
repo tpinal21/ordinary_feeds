@@ -36,6 +36,9 @@
   /* Half on each side, so the space between two slides adds up to --insta-gap
      and the strip stays centred. */
   padding-inline: calc(var(--insta-gap) / 2);
+  /* Embla can't see the end of this animation on its own — feed-carousel.jsx
+     re-measures on transitionend, otherwise the loop seam ends up a few pixels
+     off the configured gap. Drop both together. */
   transition:
     flex-basis 150ms ease,
     padding 150ms ease;

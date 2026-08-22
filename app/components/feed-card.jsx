@@ -7,7 +7,7 @@ import { FeedCarousel } from "./feed-carousel";
 
 export const CAROUSEL_FEED_DEFAULTS = {
   loop: true,
-  slides_per_view: 4,
+  slides_per_view: 7,
   speed: 1,
   auto_scroll: false,
   media_auto_play: false,
