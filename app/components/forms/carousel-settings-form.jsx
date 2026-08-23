@@ -33,7 +33,7 @@ export default function CarouselSettingsForm() {
               <s-switch
                 {...field}
                 checked={value}
-                accessibilityLabel="Video auto play switch"
+                accessibilitylabel="Video auto play switch"
                 onChange={(checked) => onChange(checked.target.checked)}
               />
             )}
@@ -54,7 +54,7 @@ export default function CarouselSettingsForm() {
               <s-switch
                 {...field}
                 checked={field.value}
-                accessibilityLabel="Auto scroll switch"
+                accessibilitylabel="Auto scroll switch"
                 onChange={(checked) => {
                   const checkedValue = checked.target.checked;
                   field.onChange(checkedValue);
@@ -103,7 +103,7 @@ export default function CarouselSettingsForm() {
               <s-switch
                 {...field}
                 checked={field.value}
-                accessibilityLabel="Loop switch"
+                accessibilitylabel="Loop switch"
                 disabled={field.disabled}
                 onChange={(checked) => field.onChange(checked.target.checked)}
               />

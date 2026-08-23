@@ -63,7 +63,7 @@ export default function InstagramButton({ account }) {
               onClick={triggerDisconnect}
               {...(disconnecting ? { loading: true } : {})}
               tone="critical"
-              accessibilityLabel="Disconnect Instagram account"
+              accessibilitylabel="Disconnect Instagram account"
             >
               Disconnect
             </s-button>

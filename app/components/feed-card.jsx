@@ -47,7 +47,7 @@ export const CarouselFeedCard = ({ feed, onRemove }) => {
             <s-button
               icon="edit"
               variant="secondary"
-              accessibilityLabel={`Edit ${feed.label} feed`}
+              accessibilitylabel={`Edit ${feed.label} feed`}
               commandfor={appWindowId}
               command="--show"
             >
@@ -58,7 +58,7 @@ export const CarouselFeedCard = ({ feed, onRemove }) => {
               variant="secondary"
               tone="critical"
               onClick={onRemove}
-              accessibilityLabel={`Remove ${feed.label} feed`}
+              accessibilitylabel={`Remove ${feed.label} feed`}
             />
           </div>
         </div>
@@ -69,7 +69,12 @@ export const CarouselFeedCard = ({ feed, onRemove }) => {
             <div className="inline-flex gap-2 items-center">
               <s-text>Theme block:</s-text>
               <s-badge tone="warning">Not added</s-badge>
-              <s-button type="button" variant="tertiary" icon="app-extension">
+              <s-button
+                type="button"
+                variant="tertiary"
+                icon="app-extension"
+                accessibilitylabel="Add theme block"
+              >
                 Add theme block
               </s-button>
             </div>

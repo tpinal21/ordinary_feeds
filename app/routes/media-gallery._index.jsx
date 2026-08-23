@@ -46,7 +46,12 @@ export default function MediaGalleryList() {
         <s-button icon="arrow-left" variant="tertiary" href="/"></s-button>
         <h1 className="text-xl font-semibold mb-2">Media gallery</h1>
         <span className="ml-auto">
-          <s-button icon="plus" variant="primary" href="/media-gallery/create">
+          <s-button
+            icon="plus"
+            variant="primary"
+            accessibilitylabel="Create gallery"
+            href="/media-gallery/create"
+          >
             Create gallery
           </s-button>
         </span>
@@ -57,7 +62,7 @@ export default function MediaGalleryList() {
         anywhere in your store.
       </p>
       <div className={enter} style={delay(150)}>
-        <s-section padding="none" accessibilityLabel="Puzzles table section">
+        <s-section padding="none" accessibilitylabel="Puzzles table section">
           <s-table loading={isLoading}>
             <s-grid
               slot="filters"
@@ -109,7 +114,7 @@ export default function MediaGalleryList() {
                         icon="delete"
                         variant="tertiary"
                         tone="critical"
-                        accessibilityLabel={`Delete ${gallery.title}`}
+                        accessibilitylabel={`Delete ${gallery.title}`}
                         onClick={() => setGalleryToDelete(gallery)}
                       ></s-button>
                     </div>

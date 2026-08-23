@@ -24,7 +24,7 @@ export default function Index() {
   const { shopDetails } = useRouteLoaderData("root");
 
   const themeExtensionEnabled = shopDetails?.theme_extension_enabled;
-  const instagramAccount = shopDetails?.instagram_account.find(
+  const instagramAccount = shopDetails?.instagram_account?.find(
     (acc) => acc.status == "CONNECTED",
   );
 
@@ -35,13 +35,15 @@ export default function Index() {
     }
   }, [searchParams.ig_connected]);
 
-  <AppSetup
-    shop={shop}
-    apiKey={apiKey}
-    instagramAccount={instagramAccount}
-    themeExtensionEnabled={themeExtensionEnabled}
-    onSetupComplete={() => {
-      setTimeout(() => navigate("/"), 1000);
-    }}
-  />;
+  return (
+    <AppSetup
+      shop={shop}
+      apiKey={apiKey}
+      instagramAccount={instagramAccount}
+      themeExtensionEnabled={themeExtensionEnabled}
+      onSetupComplete={() => {
+        setTimeout(() => navigate("/"), 1000);
+      }}
+    />
+  );
 }

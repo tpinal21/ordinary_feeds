@@ -9,7 +9,10 @@ import {
   TabsTrigger,
 } from "app/components/ui/tabs";
 import { enter, enterFast, stagger } from "app/lib/animations";
-import { Fragment, useState } from "react";
+import { APP_WINDOW_CHANNEL } from "app/lib/app-window";
+import { FEEDS_KEY, FEED_TYPES, feedCreateWindowId } from "app/lib/feeds";
+import { Fragment, useEffect, useState } from "react";
+import { mutate } from "swr";
 import FeedIllustration from "app/components/illustrations/feed-illustration";
 
 const TABS = [
@@ -152,7 +155,7 @@ export default function SettingCard({ feeds }) {
 }
 
 const EmptyStateCard = ({ page }) => (
-  <s-section accessibilityLabel="Empty state section">
+  <s-section accessibilitylabel="Empty state section">
     <s-grid gap="base" justifyItems="center" paddingBlockEnd="large-400">
       <FeedIllustration className="size-52" />
       <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
@@ -169,21 +172,43 @@ const EmptyStateCard = ({ page }) => (
 );
 
 const AddFeedButton = ({ page }) => {
+  // The create route renders in a sibling iframe, so it can't reach the
+  // `s-app-window` element — it broadcasts instead and this frame hides it.
+  useEffect(() => {
+    const windowIds = FEED_TYPES.map((type) => feedCreateWindowId(type, page));
+
+    const channel = new BroadcastChannel(APP_WINDOW_CHANNEL);
+    channel.onmessage = ({ data }) => {
+      if (data?.type !== "close" || !windowIds.includes(data.id)) return;
+
+      document.getElementById(data.id)?.hide();
+      // The feed was created in the window's own frame, so this frame's cache
+      // doesn't know about it yet.
+      mutate(FEEDS_KEY);
+    };
+    return () => channel.close();
+  }, [page]);
+
   return (
     <>
-      <s-button commandfor="add-feed-popover" icon="plus" variant="primary">
+      <s-button
+        commandfor="add-feed-popover"
+        accessibilitylabel="Add feed"
+        icon="plus"
+        variant="primary"
+      >
         Add feed
       </s-button>
-      <s-popover id="add-feed-popover" accessibilityLabel="Add a feed">
+      <s-popover id="add-feed-popover" accessibilitylabel="Add a feed">
         <div className="p-0.5 flex flex-col gap-0.5">
           {Object.entries(FEED_STYLES).map(([type, { label, icon }]) => {
-            const appWindowId = `${type}_${page}`;
+            const appWindowId = feedCreateWindowId(type, page);
             return (
               <Fragment key={appWindowId}>
                 <button
                   type="button"
                   className="inline-flex gap-0.5 px-1.5 cursor-pointer rounded-md hover:bg-neutral-100 py-0.5"
-                  accessibilityLabel="Create feed"
+                  accessibilitylabel="Create feed"
                   commandfor={appWindowId}
                   command="--show"
                 >
@@ -192,7 +217,7 @@ const AddFeedButton = ({ page }) => {
                 </button>
                 <s-app-window
                   id={appWindowId}
-                  src={`/feeds/create?type=${appWindowId}`}
+                  src={`/feeds/create?type=${type}&page=${page}`}
                 ></s-app-window>
               </Fragment>
             );

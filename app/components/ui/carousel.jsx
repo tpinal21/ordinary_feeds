@@ -153,7 +153,7 @@ function CarouselPrevious({ ...props }) {
       type="button"
       disabled={!canScrollPrev}
       onClick={scrollPrev}
-      className="cursor-pointer hover:bg-neutral-400/50 absolute z-10 touch-manipulation rounded-full p-1 top-1/2 left-0 -translate-y-1/2"
+      className="cursor-pointer hover:bg-neutral-400/50 bg-white/40 backdrop-blur-sm absolute z-10 touch-manipulation rounded-full p-1 top-1/2 left-2 -translate-y-1/2"
       {...props}
     >
       <ChevronLeftIcon />
@@ -170,7 +170,7 @@ function CarouselNext({ ...props }) {
       type="button"
       disabled={!canScrollNext}
       onClick={scrollNext}
-      className="cursor-pointer hover:bg-neutral-400/50 absolute touch-manipulation rounded-full p-1 top-1/2 right-0 -translate-y-1/2"
+      className="cursor-pointer hover:bg-neutral-400/50 bg-white/40 backdrop-blur-sm absolute touch-manipulation rounded-full p-1 top-1/2 right-2 -translate-y-1/2"
       {...props}
     >
       <ChevronRightIcon />

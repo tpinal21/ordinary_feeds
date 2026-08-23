@@ -246,7 +246,7 @@ export default function PostCard({
                 icon="product-add"
                 type="button"
                 onClick={handlePickProducts}
-                accessibilityLabel="Tag product"
+                accessibilitylabel="Tag product"
               />
             </div>
           )}

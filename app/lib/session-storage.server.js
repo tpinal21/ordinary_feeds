@@ -71,46 +71,34 @@ export class DirectusSessionStorage {
 
     invalidateCachedSession(session.id);
 
-    let isShopExisted = false;
-
     try {
-      isShopExisted = await directus.request(
-        readItem(SHOPS, shopDomain, { fields: "*" }),
+      await directus.request(
+        updateItem(SHOPS, shopDomain, {
+          status: "INSTALLED",
+          last_seen_at: now,
+          uninstalled_at: null,
+          session: {
+            id: session.id,
+            expires: session.expires,
+            data: session.data,
+          },
+        }),
       );
-    } catch (error) {}
-
-    try {
-      if (isShopExisted) {
-        await directus.request(
-          updateItem(SHOPS, shopDomain, {
-            status: "INSTALLED",
-            last_seen_at: now,
-            uninstalled_at: null,
-            session: {
-              id: session.id,
-              expires: session.expires,
-              data: session.data,
+    } catch (error) {
+      let shopGid = null;
+      try {
+        const res = await fetch(
+          `https://${_session.shop}/admin/api/${apiVersion}/graphql.json`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": _session.accessToken,
             },
-          }),
+            body: JSON.stringify({ query: `query { shop { id } }` }),
+          },
         );
-      } else {
-        let shopGid = null;
-        try {
-          const res = await fetch(
-            `https://${_session.shop}/admin/api/${apiVersion}/graphql.json`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Shopify-Access-Token": _session.accessToken,
-              },
-              body: JSON.stringify({ query: `query { shop { id } }` }),
-            },
-          );
-          shopGid = (await res.json())?.data?.shop?.id ?? null;
-        } catch (error) {
-          console.log(error, "---------in error");
-        }
+        shopGid = (await res.json())?.data?.shop?.id ?? null;
 
         await directus.request(
           createItem(SHOPS, {
@@ -126,12 +114,13 @@ export class DirectusSessionStorage {
             last_seen_at: now,
             feeds: [
               {
+                page: "HOME_PAGE",
                 label: "CAROUSEL_HP_01",
                 type: "CAROUSEL",
                 settings: {
                   media_auto_play: true,
                   loop: false,
-                  slides_per_view: 3,
+                  slides_per_view: 7,
                   speed: 0.7,
                   auto_scroll: false,
                 },
@@ -144,9 +133,9 @@ export class DirectusSessionStorage {
             ],
           }),
         );
+      } catch (error) {
+        console.log(error, "---------in error");
       }
-    } catch (error) {
-      console.log("error --------------------------", error);
     }
   }
 
@@ -166,8 +155,10 @@ export class DirectusSessionStorage {
       return session;
     } catch (err) {
       const code = err?.errors?.[0]?.extensions?.code;
-      if (code === "FORBIDDEN" || code === "RECORD_NOT_UNIQUE")
+
+      if (code === "FORBIDDEN" || code === "RECORD_NOT_UNIQUE") {
         return undefined;
+      }
       logDirectusError(`loadSession(${id}) failed`, err);
       return undefined;
     }

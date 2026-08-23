@@ -5,7 +5,7 @@ import { useFetch } from "app/hooks/useFetch";
 import { delay, enter } from "app/lib/animations";
 import { apiFetch } from "app/lib/api-client";
 import { FEEDS_KEY } from "app/lib/feeds";
-import { useRouteLoaderData } from "react-router";
+import { Navigate, useRouteLoaderData } from "react-router";
 
 export default function Index() {
   const { shopDetails } = useRouteLoaderData("root");
@@ -20,6 +20,10 @@ export default function Index() {
     fallbackData: { success: true, data: shopDetails?.feeds },
     revalidateOnMount: false,
   });
+
+  if (shopDetails?.instagram_account?.length == 0) {
+    return <Navigate to="/setup" />;
+  }
 
   return (
     <s-page heading="" inlineSize="base">
