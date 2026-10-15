@@ -3,13 +3,10 @@ import { useFetch } from "app/hooks/useFetch";
 import { useMutation } from "app/hooks/useMutation";
 import { useFieldArray, useForm } from "react-hook-form";
 import AppBridgeForm from "app/components/app-bridge-form";
-import { useRouteLoaderData } from "react-router";
 import { apiFetch } from "app/lib/api-client";
 import { delay, enter } from "app/lib/animations";
 
 export default function ManagePosts() {
-  const { shopDetails } = useRouteLoaderData("root");
-
   const formMethods = useForm({
     defaultValues: {
       media: [],

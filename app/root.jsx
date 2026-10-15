@@ -2,11 +2,12 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { ScrollArea } from "app/components/ui/scroll-area";
-// import { getShopDetails, toFeed } from "app/lib/shops.server";
+import { getShopDetails, toFeed } from "app/lib/shops.server";
 import { authenticate } from "app/shopify.server";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
-import { useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import {
+  Await,
   Links,
   Meta,
   Outlet,
@@ -29,8 +30,11 @@ export async function loader({ request }) {
 
   const shopDomain = session.shop;
 
-  // const shopDetails = await getShopDetails(shopDomain);
-  // const instagramAccount = shopDetails?.instagram_account;
+  // Not awaited: the shell streams immediately and the outlet suspends until this resolves.
+  const shopDetails = getShopDetails(shopDomain).then((details) => ({
+    ...details,
+    feeds: details?.feeds?.map(toFeed),
+  }));
 
   // if (!instagramAccount) {
   //   return redirect(`/setup?${url.searchParams.toString()}`);
@@ -38,17 +42,15 @@ export async function loader({ request }) {
 
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    // shopDetails: {
-    //   ...shopDetails,
-    //   feeds: shopDetails?.feeds?.map(toFeed),
-    // },
+    shopDetails,
     shopDomain,
     isLibraryAuthRoute: LIBRARY_AUTH_PATHS.includes(url.pathname),
   };
 }
 
 export default function App() {
-  const { apiKey, shopDomain, isLibraryAuthRoute } = useLoaderData();
+  const { apiKey, shopDomain, shopDetails, isLibraryAuthRoute } =
+    useLoaderData();
 
   return (
     <html lang="en">
@@ -66,8 +68,7 @@ export default function App() {
       </head>
       <body className="font-inter">
         <NuqsAdapter>
-          Hello
-          {/* {isLibraryAuthRoute ? (
+          {isLibraryAuthRoute ? (
             <Outlet />
           ) : (
             <AppProvider embedded apiKey={apiKey}>
@@ -78,10 +79,21 @@ export default function App() {
               </s-app-nav>
               <LoadingProgressBarProvider />
               <ScrollArea>
-                <Outlet />
+                <Suspense fallback={<s-spinner accessibilityLabel="Loading" />}>
+                  <Await
+                    resolve={shopDetails}
+                    errorElement={
+                      <s-banner tone="critical">
+                        Couldn't load shop details.
+                      </s-banner>
+                    }
+                  >
+                    {(shopDetails) => <Outlet context={{ shopDetails }} />}
+                  </Await>
+                </Suspense>
               </ScrollArea>
             </AppProvider>
-          )} */}
+          )}
         </NuqsAdapter>
         <ScrollRestoration />
         <Scripts />

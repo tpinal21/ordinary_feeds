@@ -2,7 +2,7 @@ import AppSetup from "app/components/app-setup";
 import { authenticate } from "app/shopify.server";
 import { parseAsString, useQueryStates } from "nuqs";
 import { useEffect } from "react";
-import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
+import { useLoaderData, useNavigate, useOutletContext } from "react-router";
 
 export async function loader({ request }) {
   const { session, admin } = await authenticate.admin(request);
@@ -21,7 +21,7 @@ export default function Index() {
   const navigate = useNavigate();
 
   const { shop, apiKey } = useLoaderData();
-  const { shopDetails } = useRouteLoaderData("root");
+  const { shopDetails } = useOutletContext();
 
   const themeExtensionEnabled = shopDetails?.theme_extension_enabled;
   const instagramAccount = shopDetails?.instagram_account?.find(

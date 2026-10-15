@@ -5,10 +5,10 @@ import { useFetch } from "app/hooks/useFetch";
 import { delay, enter } from "app/lib/animations";
 import { apiFetch } from "app/lib/api-client";
 import { FEEDS_KEY } from "app/lib/feeds";
-import { Navigate, useRouteLoaderData } from "react-router";
+import { Navigate, useOutletContext } from "react-router";
 
 export default function Index() {
-  const { shopDetails } = useRouteLoaderData("root");
+  const { shopDetails } = useOutletContext();
 
   const instagramAccount = shopDetails?.instagram_account.find(
     (acc) => acc.status == "CONNECTED",
