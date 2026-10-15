@@ -2,7 +2,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { ScrollArea } from "app/components/ui/scroll-area";
-import { getShopDetails, toFeed } from "app/lib/shops.server";
+// import { getShopDetails, toFeed } from "app/lib/shops.server";
 import { authenticate } from "app/shopify.server";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { useEffect, useRef } from "react";
@@ -29,8 +29,8 @@ export async function loader({ request }) {
 
   const shopDomain = session.shop;
 
-  const shopDetails = await getShopDetails(shopDomain);
-  const instagramAccount = shopDetails?.instagram_account;
+  // const shopDetails = await getShopDetails(shopDomain);
+  // const instagramAccount = shopDetails?.instagram_account;
 
   // if (!instagramAccount) {
   //   return redirect(`/setup?${url.searchParams.toString()}`);
@@ -38,10 +38,10 @@ export async function loader({ request }) {
 
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    shopDetails: {
-      ...shopDetails,
-      feeds: shopDetails?.feeds?.map(toFeed),
-    },
+    // shopDetails: {
+    //   ...shopDetails,
+    //   feeds: shopDetails?.feeds?.map(toFeed),
+    // },
     shopDomain,
     isLibraryAuthRoute: LIBRARY_AUTH_PATHS.includes(url.pathname),
   };
@@ -66,7 +66,8 @@ export default function App() {
       </head>
       <body className="font-inter">
         <NuqsAdapter>
-          {isLibraryAuthRoute ? (
+          Hello
+          {/* {isLibraryAuthRoute ? (
             <Outlet />
           ) : (
             <AppProvider embedded apiKey={apiKey}>
@@ -80,7 +81,7 @@ export default function App() {
                 <Outlet />
               </ScrollArea>
             </AppProvider>
-          )}
+          )} */}
         </NuqsAdapter>
         <ScrollRestoration />
         <Scripts />
