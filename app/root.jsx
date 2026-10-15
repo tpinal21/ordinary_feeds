@@ -24,31 +24,31 @@ const LIBRARY_AUTH_PATHS = ["/auth/session-token", "/auth/exit-iframe"];
 const STICKY_EMBEDDED_PARAMS = ["shop", "host", "embedded"];
 
 export async function loader({ request }) {
-  //   const url = new URL(request.url);
-  //   const { session } = await authenticate.admin(request);
+  const url = new URL(request.url);
+  const { session } = await authenticate.admin(request);
 
   const shopDomain = session.shop;
 
-  //   const shopDetails = await getShopDetails(shopDomain);
-  //   const instagramAccount = shopDetails?.instagram_account;
+  const shopDetails = await getShopDetails(shopDomain);
+  const instagramAccount = shopDetails?.instagram_account;
 
-  //   // if (!instagramAccount) {
-  //   //   return redirect(`/setup?${url.searchParams.toString()}`);
-  //   // }
+  // if (!instagramAccount) {
+  //   return redirect(`/setup?${url.searchParams.toString()}`);
+  // }
 
   return {
-    //     apiKey: process.env.SHOPIFY_API_KEY || "",
-    //     shopDetails: {
-    //       ...shopDetails,
-    //       feeds: shopDetails?.feeds?.map(toFeed),
-    //     },
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+    shopDetails: {
+      ...shopDetails,
+      feeds: shopDetails?.feeds?.map(toFeed),
+    },
     shopDomain,
-    //     isLibraryAuthRoute: LIBRARY_AUTH_PATHS.includes(url.pathname),
+    isLibraryAuthRoute: LIBRARY_AUTH_PATHS.includes(url.pathname),
   };
 }
 
 export default function App() {
-  // const { apiKey, shopDomain, isLibraryAuthRoute } = useLoaderData();
+  const { apiKey, shopDomain, isLibraryAuthRoute } = useLoaderData();
 
   return (
     <html lang="en">
@@ -66,8 +66,7 @@ export default function App() {
       </head>
       <body className="font-inter">
         <NuqsAdapter>
-          Hello
-          {/* {isLibraryAuthRoute ? (
+          {isLibraryAuthRoute ? (
             <Outlet />
           ) : (
             <AppProvider embedded apiKey={apiKey}>
@@ -81,7 +80,7 @@ export default function App() {
                 <Outlet />
               </ScrollArea>
             </AppProvider>
-          )} */}
+          )}
         </NuqsAdapter>
         <ScrollRestoration />
         <Scripts />
