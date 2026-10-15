@@ -1,21 +1,21 @@
 import AppBridgeForm from "app/components/app-bridge-form";
-import { CAROUSEL_FEED_DEFAULTS } from "app/components/feed-card";
-import { FeedCarousel } from "app/components/feed-carousel";
-import CarouselSettingsForm from "app/components/forms/carousel-settings-form";
+import { FeedPreview } from "app/components/feed-preview";
+import FeedSettingsForm from "app/components/forms/feed-settings-form";
 import { ResizablePreview } from "app/components/resizable-preview";
-import { useFetch } from "app/hooks/useFetch";
+import { useGalleries } from "app/hooks/useGalleries";
 import { useMutation } from "app/hooks/useMutation";
 import { apiFetch } from "app/lib/api-client";
 import { requestAppWindowClose } from "app/lib/app-window";
 import {
   FEEDS_KEY,
+  FEED_DEFAULTS,
   FEED_PAGE_CODES,
   FEED_TYPES,
   SUPPORTED_FEED_TYPES,
   feedCreateWindowId,
 } from "app/lib/feeds";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 // Placeholder tiles so the preview isn't empty before a gallery resolves.
@@ -33,28 +33,31 @@ export default function CreateFeed() {
     parseAsStringLiteral(FEED_PAGE_CODES).withDefault("HP"),
   );
 
-  const [media, setMedia] = useState(PREVIEW_PLACEHOLDERS);
-
   const formMethods = useForm({
     defaultValues: {
       gallery: { id: "" },
-      settings: {
-        ...CAROUSEL_FEED_DEFAULTS,
-      },
+      settings: { ...FEED_DEFAULTS[type] },
     },
   });
-
-  const { data: galleriesData, isLoading: fetchingGalleries } = useFetch(
-    "/api/galleries",
-    ({ key }) => apiFetch(key),
-    {
-      revalidateIfStale: false,
-    },
-  );
 
   const { watch, reset, getValues, setValue, handleSubmit } = formMethods;
 
   const formValues = watch();
+  const galleryId = formValues.gallery?.id;
+
+  const { galleries, isLoading: fetchingGalleries } = useGalleries();
+
+  // A new feed starts on the shop's automatic gallery; picking another one in
+  // the form takes over from there.
+  const gallery =
+    galleries?.find((g) => g.id === galleryId) ??
+    galleries?.find((g) => g.type === "AUTO");
+
+  useEffect(() => {
+    if (gallery && gallery.id !== galleryId) {
+      setValue("gallery.id", gallery.id, { shouldDirty: true });
+    }
+  }, [gallery, galleryId, setValue]);
 
   const { trigger: createFeed, isMutating: isCreating } = useMutation(
     "create-feed",
@@ -90,28 +93,12 @@ export default function CreateFeed() {
     }),
   );
 
-  useEffect(() => {
-    let autoGallery;
-
-    if (formValues?.gallery?.id) {
-      autoGallery = galleriesData?.data?.find(
-        (g) => g.id === formValues?.gallery?.id,
-      );
-    } else {
-      autoGallery = galleriesData?.data?.find((g) => g.type === "AUTO");
-    }
-    if (autoGallery) {
-      setValue("gallery.id", autoGallery.id, { shouldDirty: true });
-      setMedia(autoGallery.media, { shouldDirty: true });
-    }
-  }, [JSON.stringify(galleriesData), formValues?.gallery?.id]);
-
   if (!SUPPORTED_FEED_TYPES.includes(type)) {
     return (
       <s-page heading="Heading" inlineSize="large">
         <s-banner tone="info" heading={`${type} feeds aren't available yet`}>
           <s-paragraph>
-            Pick the carousel style for now — this one is on the way.
+            Pick another style for now — this one is on the way.
           </s-paragraph>
         </s-banner>
       </s-page>
@@ -130,7 +117,11 @@ export default function CreateFeed() {
       </s-button>
       <div className="flex flex-col gap-2">
         <ResizablePreview>
-          <FeedCarousel media={media} settings={formValues.settings} />
+          <FeedPreview
+            type={type}
+            media={gallery?.media ?? PREVIEW_PLACEHOLDERS}
+            settings={formValues.settings}
+          />
         </ResizablePreview>
 
         <AppBridgeForm
@@ -138,7 +129,7 @@ export default function CreateFeed() {
           onSubmit={handleFormSubmit}
           showSaveBar={false}
         >
-          <CarouselSettingsForm />
+          <FeedSettingsForm type={type} />
         </AppBridgeForm>
       </div>
     </s-page>

@@ -1,7 +1,4 @@
-import {
-  CAROUSEL_FEED_DEFAULTS,
-  CarouselFeedCard,
-} from "app/components/feed-card";
+import { FeedCard } from "app/components/feed-card";
 import {
   Tabs,
   TabsContent,
@@ -10,7 +7,12 @@ import {
 } from "app/components/ui/tabs";
 import { enter, enterFast, stagger } from "app/lib/animations";
 import { APP_WINDOW_CHANNEL } from "app/lib/app-window";
-import { FEEDS_KEY, FEED_TYPES, feedCreateWindowId } from "app/lib/feeds";
+import {
+  FEEDS_KEY,
+  FEED_TYPES,
+  feedCreateWindowId,
+  feedSettings,
+} from "app/lib/feeds";
 import { Fragment, useEffect, useState } from "react";
 import { mutate } from "swr";
 import FeedIllustration from "app/components/illustrations/feed-illustration";
@@ -33,7 +35,7 @@ export default function SettingCard({ feeds }) {
   const feedFields = feeds
     ?.map((feed) => ({
       ...feed,
-      settings: { ...CAROUSEL_FEED_DEFAULTS, ...JSON.parse(feed.settings) },
+      settings: feedSettings(feed),
     }))
     .filter((f) => f.page == currentTab);
 
@@ -78,7 +80,7 @@ export default function SettingCard({ feeds }) {
               <EmptyStateCard page="HP" />
             ) : (
               feedFields.map((feed) => (
-                <CarouselFeedCard
+                <FeedCard
                   key={feed.id}
                   feed={feed}
                   onRemove={() => {}}
@@ -109,7 +111,7 @@ export default function SettingCard({ feeds }) {
               <EmptyStateCard page="PP" />
             ) : (
               feedFields.map((feed) => (
-                <CarouselFeedCard
+                <FeedCard
                   key={feed.id}
                   feed={feed}
                   onRemove={() => {}}
@@ -140,7 +142,7 @@ export default function SettingCard({ feeds }) {
               <EmptyStateCard page="CP" />
             ) : (
               feedFields.map((feed) => (
-                <CarouselFeedCard
+                <FeedCard
                   key={feed.id}
                   feed={feed}
                   onRemove={() => {}}

@@ -1,0 +1,103 @@
+/**
+ * Feed grid sizing — deliberately plain CSS, same contract as carousel.css.
+ *
+ * Everything the merchant configures arrives as a custom property set on the
+ * grid root, so these rules work unchanged in the app preview and in the theme
+ * extension, where there is no React to compute anything:
+ *
+ *   --insta-columns   tiles per row at --insta-design-width
+ *   --insta-gap       space between two neighbouring tiles
+ *   --insta-radius    tile corner radius
+ *   --insta-aspect    tile shape
+ *
+ * Keep this file free of Tailwind so it stays copy-pasteable into the
+ * extension's own grid.css.
+ */
+.insta-grid {
+  --insta-columns: 4;
+  --insta-gap: 0px;
+  --insta-radius: 0px;
+  --insta-aspect: 1 / 1;
+  /* Tiles are a fixed shape, so the media fills them rather than letterboxing
+     the way a carousel slide does. */
+  --insta-fit: cover;
+
+  /* The width --insta-columns is authored against, same as the carousel's.
+     A tile is never narrower than its share of this, so a wider viewport fits
+     more tiles per row instead of stretching each one. Subtracting the gaps is
+     what makes exactly --insta-columns tiles land in --insta-design-width. */
+  --insta-design-width: 1080px;
+  --insta-tile-width: calc(
+    (
+        var(--insta-design-width) - (var(--insta-columns) - 1) *
+          var(--insta-gap)
+      ) /
+      var(--insta-columns)
+  );
+
+  /* Below roughly a tablet there isn't room for a laptop-sized tile more than
+     once or twice, and one tile filling a phone screen looks broken. So the
+     minimum is also capped at a share of the row — three across, or fewer if
+     the merchant asked for fewer. This is the only case where a tile is
+     allowed narrower than --insta-tile-width, and it gets there by shrinking
+     smoothly rather than dropping a column at a breakpoint. */
+  --insta-floor-columns: min(3, var(--insta-columns));
+  --insta-tile-floor: calc(
+    (100% - (var(--insta-floor-columns) - 1) * var(--insta-gap)) /
+      var(--insta-floor-columns)
+  );
+
+  width: 100%;
+}
+
+.insta-grid__items {
+  display: grid;
+  /* auto-fill, not auto-fit: with fewer posts than tracks the empty tracks
+     stay, so three posts on a wide screen keep their size instead of blowing
+     up to a third of the row each. */
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(var(--insta-tile-width), var(--insta-tile-floor)), 1fr)
+  );
+  gap: var(--insta-gap);
+  transition: gap 150ms ease;
+}
+
+.insta-grid__media {
+  border-radius: var(--insta-radius);
+}
+
+.insta-grid__more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--insta-gap);
+}
+
+/**
+ * The load-more button is a call to action inside the theme's own content, so
+ * it should look like the theme's buttons rather than ours.
+ *
+ * `:where()` drops these rules to zero specificity. On the storefront the
+ * button also carries the theme's button class, so any rule the theme defines
+ * for it — `.button`, `.btn`, whatever it is called — outranks everything here
+ * and wins outright. What's left is a fallback for themes that style no such
+ * class, and for the app preview, where there is no theme at all.
+ *
+ * Keep every declaration inside the `:where()`. One rule that escapes it beats
+ * the theme instead of yielding to it.
+ */
+:where(.insta-grid__more-btn) {
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  padding: 0.9em 2.2em;
+  color: #fff;
+  background: #121212;
+  border: 1px solid transparent;
+  border-radius: 0;
+  transition: opacity 150ms ease;
+}
+
+:where(.insta-grid__more-btn:hover) {
+  opacity: 0.85;
+}

@@ -1,22 +1,11 @@
+import { FeedPreview } from "app/components/feed-preview";
 import { Card, CardContent, CardHeader } from "app/components/ui/card";
 import { APP_WINDOW_CHANNEL } from "app/lib/app-window";
 import { FEEDS_KEY } from "app/lib/feeds";
 import { useEffect } from "react";
 import { mutate } from "swr";
-import { FeedCarousel } from "./feed-carousel";
 
-export const CAROUSEL_FEED_DEFAULTS = {
-  loop: true,
-  slides_per_view: 7,
-  speed: 1,
-  auto_scroll: false,
-  media_auto_play: false,
-  // Both in px.
-  border_radius: 8,
-  item_gap: 8,
-};
-
-export const CarouselFeedCard = ({ feed, onRemove }) => {
+export const FeedCard = ({ feed, onRemove }) => {
   const appWindowId = `/feeds/${feed.id}`;
 
   useEffect(() => {
@@ -82,7 +71,8 @@ export const CarouselFeedCard = ({ feed, onRemove }) => {
           <div className="mt-1">
             <s-heading>Preview</s-heading>
           </div>
-          <FeedCarousel
+          <FeedPreview
+            type={feed?.type}
             media={feed?.gallery?.media}
             settings={feed?.settings}
           />

@@ -189,7 +189,14 @@ export default function PostCard({
         playsInline
         preload="none"
         onTimeUpdate={handleTimeUpdate}
-        className="aspect-9/16 h-auto w-full group-hover/post-card:brightness-100 transition-all brightness-75 object-contain"
+        // Shape and fit come from the feed root so a grid tile can be square
+        // while a carousel slide stays tall — same custom properties the theme
+        // extension sets from Liquid. The fallbacks are the carousel's.
+        style={{
+          aspectRatio: "var(--insta-aspect, 9 / 16)",
+          objectFit: "var(--insta-fit, contain)",
+        }}
+        className="h-auto w-full group-hover/post-card:brightness-100 transition-all brightness-75"
       />
 
       <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/25">

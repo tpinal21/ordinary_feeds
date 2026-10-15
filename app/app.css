@@ -4,6 +4,7 @@
 @import "@fontsource-variable/inter";
 /* Unlayered, so its rules win over the Tailwind utilities on the same elements. */
 @import "./carousel.css";
+@import "./grid.css";
 
 @custom-variant dark (&:is(.dark *));
 
