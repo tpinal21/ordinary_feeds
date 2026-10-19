@@ -2,6 +2,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { ScrollArea } from "app/components/ui/scroll-area";
+import { Spinner } from "app/components/ui/spinner";
 import { getShopDetails, toFeed } from "app/lib/shops.server";
 import { authenticate } from "app/shopify.server";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
@@ -79,7 +80,7 @@ export default function App() {
               </s-app-nav>
               <LoadingProgressBarProvider />
               <ScrollArea>
-                <Suspense fallback={<s-spinner accessibilityLabel="Loading" />}>
+                <Suspense fallback={<Spinner />}>
                   <Await
                     resolve={shopDetails}
                     errorElement={

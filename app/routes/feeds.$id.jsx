@@ -3,6 +3,7 @@ import AppBridgeForm from "app/components/app-bridge-form";
 import { FeedPreview } from "app/components/feed-preview";
 import FeedSettingsForm from "app/components/forms/feed-settings-form";
 import { ResizablePreview } from "app/components/resizable-preview";
+import { Spinner } from "app/components/ui/spinner";
 import directus from "app/directus.server";
 import { useGalleries } from "app/hooks/useGalleries";
 import { useMutation } from "app/hooks/useMutation";
@@ -11,30 +12,47 @@ import { requestAppWindowClose } from "app/lib/app-window";
 import { FEEDS } from "app/lib/constants";
 import { feedSettings } from "app/lib/feeds";
 import { toFeed } from "app/lib/shops.server";
+import { Suspense } from "react";
 import { useForm } from "react-hook-form";
-import { useLoaderData, useParams, useRevalidator } from "react-router";
+import {
+  Await,
+  useLoaderData,
+  useParams,
+  useRevalidator,
+} from "react-router";
 
 export async function loader({ params }) {
-  let feed;
-
-  try {
-    feed = await directus.request(
+  // Not awaited: the page shell streams immediately and suspends until the feed arrives.
+  const feed = directus
+    .request(
       readItem(FEEDS, params.id, {
         fields: ["*", "gallery.*", "gallery.ig_media.instagram_media_id.*"],
       }),
-    );
+    )
+    .then(toFeed)
+    .catch((error) => {
+      console.log(error, "error");
+      return {};
+    });
 
-    return { feed: toFeed(feed) };
-  } catch (error) {
-    console.log(error, "error");
-  }
-  return { feed: {} };
+  return { feed };
 }
 
 export default function FeedsEdit() {
-  const { id } = useParams();
+  const { feed } = useLoaderData();
 
-  const { feed: feedDetails } = useLoaderData();
+  return (
+    <Suspense fallback={<Spinner />}>
+      <Await resolve={feed}>
+        {(feedDetails) => <FeedsEditForm feedDetails={feedDetails} />}
+      </Await>
+    </Suspense>
+  );
+}
+
+// Split out so `useForm` mounts with the resolved feed as its `defaultValues`.
+function FeedsEditForm({ feedDetails }) {
+  const { id } = useParams();
 
   const formMethods = useForm({
     defaultValues: {

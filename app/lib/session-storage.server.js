@@ -84,6 +84,8 @@ export class DirectusSessionStorage {
           },
         }),
       );
+      // Seed the cache with the fresh token so the next request doesn't re-read Directus.
+      setCachedSession(session.id, _session);
     } catch (error) {
       let shopGid = null;
       try {
