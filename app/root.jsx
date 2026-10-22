@@ -72,7 +72,7 @@ export default function App() {
           {isLibraryAuthRoute ? (
             <Outlet />
           ) : (
-            <AppProvider embedded apiKey={apiKey}>
+            <AppProvider apiKey={apiKey}>
               <StickyEmbeddedParams shop={shopDomain} />
               <s-app-nav>
                 <s-link href="/media-gallery">Media Gallery</s-link>

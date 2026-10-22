@@ -11,30 +11,23 @@
  *   transitions of any interactive element it lands on (tab triggers, buttons).
  *   Same reason delays go through the `delay()`/`stagger()` inline styles below
  *   instead of `delay-*`, which also sets `transition-delay`.
- * - `enterFade` exists because `zoom-in-*` animates `transform`, and a
- *   transform on an ancestor changes the offsetParent of everything inside it.
- *   That breaks position/measurement-sensitive children — react-dnd hit
- *   testing, Embla carousels, react-resizable handles — for the duration of
- *   the animation. Use `enterFade` around those; `enter` everywhere else.
+ * - Opacity only, no transform. A transform on an ancestor changes the
+ *   offsetParent of everything inside it, which breaks position/measurement-
+ *   sensitive children — react-dnd hit testing, Embla carousels,
+ *   react-resizable handles — for the duration of the animation. So these are
+ *   safe to wrap around anything.
  */
-const ENTER_BASE = "animate-in fade-in ease-out fill-mode-both";
-
-const ENTER_TRANSFORM = `${ENTER_BASE} zoom-in-98 motion-reduce:animate-none`;
+const ENTER_BASE =
+  "animate-in fade-in ease-out fill-mode-both motion-reduce:animate-none";
 
 /** Standard page-block reveal. Pair with `delay()` or `stagger()`. */
-export const enter = `${ENTER_TRANSFORM} animation-duration-500`;
+export const enter = `${ENTER_BASE} animation-duration-500`;
 
 /**
  * Shorter variant for content that re-animates on interaction (e.g. a tab panel
  * remounting on every switch), where the full 500ms reads as lag.
  */
-export const enterFast = `${ENTER_TRANSFORM} animation-duration-300`;
-
-/**
- * Opacity-only reveal — no transform, so it is safe to wrap around drag-and-drop
- * grids, carousels, resizable panes and sticky columns.
- */
-export const enterFade = `${ENTER_BASE} animation-duration-500 motion-reduce:animate-none`;
+export const enterFast = `${ENTER_BASE} animation-duration-300`;
 
 /** Delay a single element's reveal, in ms. */
 export const delay = (ms) => ({ animationDelay: `${ms}ms` });

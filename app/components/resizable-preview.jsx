@@ -1,4 +1,4 @@
-import { enterFade } from "app/lib/animations";
+import { enter } from "app/lib/animations";
 import { useState } from "react";
 import { Resizable } from "react-resizable";
 import "react-resizable/css/styles.css";
@@ -38,7 +38,7 @@ export function ResizablePreview({ children }) {
   const [width, setWidth] = useState(1024);
 
   return (
-    <div className={`flex flex-col gap-2 w-full min-h-60 ${enterFade}`}>
+    <div className={`flex flex-col gap-2 w-full min-h-60 ${enter}`}>
       <div className="h-5 w-full mb-2 bg-neutral-200 inline-flex relative">
         <span className="absolute left-1/2 -translate-x-1/2 z-10 px-2 bg-neutral-200 text-[10px] leading-5 font-medium tabular-nums text-neutral-600 pointer-events-none whitespace-nowrap">
           {Math.round(width)}px · {deviceType(width)}

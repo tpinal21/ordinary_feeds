@@ -2,7 +2,7 @@ import AppBridgeForm from "app/components/app-bridge-form";
 import { MediaListModal } from "app/components/media-list-modal";
 import PostCard from "app/components/post-card";
 import { useMutation } from "app/hooks/useMutation";
-import { delay, enter, enterFade } from "app/lib/animations";
+import { delay, enter } from "app/lib/animations";
 import { apiFetch } from "app/lib/api-client";
 import { cn } from "app/lib/utils";
 import { useRef } from "react";
@@ -105,7 +105,7 @@ export default function MediaGallery() {
         <AppBridgeForm {...formMethods} onSubmit={handleSave}>
           <div className="flex gap-4 items-stretch">
             <div
-              className={`sticky top-3 flex flex-col gap-4 w-full max-w-80 ${enterFade}`}
+              className={`sticky top-3 flex flex-col gap-4 w-full max-w-80 ${enter}`}
               style={delay(150)}
             >
               <s-section>
@@ -192,7 +192,7 @@ export default function MediaGallery() {
                 </div>
               </s-section>
             </div>
-            <div className={`w-full ${enterFade}`} style={delay(200)}>
+            <div className={`w-full ${enter}`} style={delay(200)}>
               <s-box
                 background="subdued"
                 border="base"

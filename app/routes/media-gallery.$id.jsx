@@ -9,7 +9,7 @@ import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import AppBridgeForm from "app/components/app-bridge-form";
 import { useMutation } from "app/hooks/useMutation";
-import { delay, enter, enterFade } from "app/lib/animations";
+import { delay, enter } from "app/lib/animations";
 import { GALLERY_TYPES } from "./media-gallery.create";
 
 export default function MediaGallery() {
@@ -82,7 +82,7 @@ export default function MediaGallery() {
           <div className="grid gap-4 grid-cols-1 md:grid-cols-[326px_auto]">
             <div>
               <div
-                className={`sticky top-4 flex flex-col gap-4 w-full ${enterFade}`}
+                className={`sticky top-4 flex flex-col gap-4 w-full ${enter}`}
                 style={delay(150)}
               >
                 <s-section>
@@ -134,7 +134,7 @@ export default function MediaGallery() {
               </div>
             </div>
 
-            <div className={`w-full ${enterFade}`} style={delay(200)}>
+            <div className={`w-full ${enter}`} style={delay(200)}>
               <s-box
                 background="subdued"
                 border="base"

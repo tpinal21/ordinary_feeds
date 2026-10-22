@@ -80,11 +80,7 @@ export default function SettingCard({ feeds }) {
               <EmptyStateCard page="HP" />
             ) : (
               feedFields.map((feed) => (
-                <FeedCard
-                  key={feed.id}
-                  feed={feed}
-                  onRemove={() => {}}
-                />
+                <FeedCard key={feed.id} feed={feed} onRemove={() => {}} />
               ))
             )}
           </div>
@@ -111,11 +107,7 @@ export default function SettingCard({ feeds }) {
               <EmptyStateCard page="PP" />
             ) : (
               feedFields.map((feed) => (
-                <FeedCard
-                  key={feed.id}
-                  feed={feed}
-                  onRemove={() => {}}
-                />
+                <FeedCard key={feed.id} feed={feed} onRemove={() => {}} />
               ))
             )}
           </div>
@@ -142,11 +134,7 @@ export default function SettingCard({ feeds }) {
               <EmptyStateCard page="CP" />
             ) : (
               feedFields.map((feed) => (
-                <FeedCard
-                  key={feed.id}
-                  feed={feed}
-                  onRemove={() => {}}
-                />
+                <FeedCard key={feed.id} feed={feed} onRemove={() => {}} />
               ))
             )}
           </div>
