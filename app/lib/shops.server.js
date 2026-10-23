@@ -1,6 +1,7 @@
 import { readItem } from "@directus/sdk";
 import { SHOPS } from "app/lib/constants";
 import directus from "../directus.server";
+import { waitForShopWrite } from "./session-storage.server";
 
 const FEED_FIELDS = [
   "feeds.*",
@@ -37,6 +38,7 @@ export function toFeed({ id, page, type, label, settings, gallery }) {
 }
 
 export async function getShopDetails(shopDomain) {
+  await waitForShopWrite(shopDomain);
   return await directus.request(
     readItem(SHOPS, shopDomain, {
       fields: [
@@ -55,6 +57,7 @@ export async function getShopDetails(shopDomain) {
 
 // Feeds only — the root loader seeds the list, this backs refreshes of it.
 export async function getShopFeeds(shopDomain) {
+  await waitForShopWrite(shopDomain);
   const shop = await directus.request(
     readItem(SHOPS, shopDomain, { fields: FEED_FIELDS }),
   );

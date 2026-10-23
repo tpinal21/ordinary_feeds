@@ -37,6 +37,14 @@ function invalidateCachedSession(id) {
   sessionCache.delete(id);
 }
 
+// storeSession saves to Directus in the background; readers of the shop row
+// await this so a fresh install doesn't read the row before it exists.
+const pendingShopWrites = new Map();
+
+export function waitForShopWrite(shopDomain) {
+  return pendingShopWrites.get(shopDomain) ?? Promise.resolve();
+}
+
 function logDirectusError(label, err) {
   const errors = err?.errors;
   if (Array.isArray(errors) && errors.length) {
@@ -64,106 +72,120 @@ function rowToSession(row) {
 }
 
 export class DirectusSessionStorage {
-  async storeSession(_session) {
+  storeSession(_session) {
     const now = new Date().toISOString();
     const session = sessionToRow(_session);
     const shopDomain = session.shop;
 
-    invalidateCachedSession(session.id);
+    // Cache first so the request can continue without waiting on Directus.
+    setCachedSession(session.id, _session);
 
-    try {
-      await directus.request(
-        updateItem(SHOPS, shopDomain, {
-          status: "INSTALLED",
-          last_seen_at: now,
-          uninstalled_at: null,
-          session: {
-            id: session.id,
-            expires: session.expires,
-            data: session.data,
-          },
-        }),
-      );
-      // Seed the cache with the fresh token so the next request doesn't re-read Directus.
-      setCachedSession(session.id, _session);
-    } catch (error) {
-      let shopGid = null;
-      try {
-        const res = await fetch(
-          `https://${_session.shop}/admin/api/${apiVersion}/graphql.json`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": _session.accessToken,
-            },
-            body: JSON.stringify({ query: `query { shop { id } }` }),
-          },
-        );
-        shopGid = (await res.json())?.data?.shop?.id ?? null;
-
-        await directus.request(
-          createItem(SHOPS, {
-            gid: shopGid,
-            shop_domain: shopDomain,
-            shop_handle: shopDomain.replace(".myshopify.com", ""),
+    // Start from a resolved Promise so synchronous throws (e.g. from updateItem) land in .catch.
+    const write = Promise.resolve()
+      .then(() =>
+        directus.request(
+          updateItem(SHOPS, shopDomain, {
+            status: "INSTALLED",
+            last_seen_at: now,
+            uninstalled_at: null,
             session: {
               id: session.id,
               expires: session.expires,
               data: session.data,
             },
-            installed_at: now,
-            last_seen_at: now,
-            feeds: [
-              {
-                page: "HOME_PAGE",
-                label: "CAROUSEL_HP_01",
-                type: "CAROUSEL",
-                settings: {
-                  media_auto_play: true,
-                  loop: false,
-                  slides_per_view: 7,
-                  speed: 0.7,
-                  auto_scroll: false,
-                },
-                gallery: {
-                  title: "Latest posts",
-                  type: "AUTO",
-                  shop: shopDomain,
-                },
-              },
-            ],
           }),
-        );
-      } catch (error) {
-        console.log(error, "---------in error");
-      }
-    }
+        ),
+      )
+      .catch(() =>
+        fetch(`https://${_session.shop}/admin/api/${apiVersion}/graphql.json`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": _session.accessToken,
+          },
+          body: JSON.stringify({ query: `query { shop { id } }` }),
+        })
+          .then((res) => res.json())
+          .then((json) => {
+            const shopGid = json?.data?.shop?.id ?? null;
+
+            return directus.request(
+              createItem(SHOPS, {
+                gid: shopGid,
+                shop_domain: shopDomain,
+                shop_handle: shopDomain.replace(".myshopify.com", ""),
+                session: {
+                  id: session.id,
+                  expires: session.expires,
+                  data: session.data,
+                },
+                installed_at: now,
+                last_seen_at: now,
+                feeds: [
+                  {
+                    page: "HOME_PAGE",
+                    label: "CAROUSEL_HP_01",
+                    type: "CAROUSEL",
+                    settings: {
+                      media_auto_play: true,
+                      loop: false,
+                      slides_per_view: 7,
+                      speed: 0.7,
+                      auto_scroll: false,
+                    },
+                    gallery: {
+                      title: "Latest posts",
+                      type: "AUTO",
+                      shop: shopDomain,
+                    },
+                  },
+                ],
+              }),
+            );
+          })
+          .then(() => undefined)
+          .catch((error) => {
+            console.log(error, "---------in error");
+          }),
+      )
+      .catch((err) =>
+        logDirectusError(`storeSession(${session.id}) failed`, err),
+      )
+      .finally(() => {
+        if (pendingShopWrites.get(shopDomain) === write) {
+          pendingShopWrites.delete(shopDomain);
+        }
+      });
+
+    pendingShopWrites.set(shopDomain, write);
+    return Promise.resolve(true);
   }
 
-  async loadSession(id) {
+  loadSession(id) {
     console.log(
       "---------------------------------------- loadSession called",
       id,
     );
 
     const cached = getCachedSession(id);
-    if (cached) return cached;
+    if (cached) return Promise.resolve(cached);
 
-    try {
-      const row = await directus.request(readItem(SESSIONS, id));
-      const session = rowToSession(row);
-      if (session) setCachedSession(id, session);
-      return session;
-    } catch (err) {
-      const code = err?.errors?.[0]?.extensions?.code;
+    return Promise.resolve()
+      .then(() => directus.request(readItem(SESSIONS, id)))
+      .then((row) => {
+        const session = rowToSession(row);
+        if (session) setCachedSession(id, session);
+        return session;
+      })
+      .catch((err) => {
+        const code = err?.errors?.[0]?.extensions?.code;
 
-      if (code === "FORBIDDEN" || code === "RECORD_NOT_UNIQUE") {
+        if (code === "FORBIDDEN" || code === "RECORD_NOT_UNIQUE") {
+          return undefined;
+        }
+        logDirectusError(`loadSession(${id}) failed`, err);
         return undefined;
-      }
-      logDirectusError(`loadSession(${id}) failed`, err);
-      return undefined;
-    }
+      });
   }
 
   async deleteSession(id) {
