@@ -80,84 +80,85 @@ export class DirectusSessionStorage {
     // Cache first so the request can continue without waiting on Directus.
     setCachedSession(session.id, _session);
 
-    // Start from a resolved Promise so synchronous throws (e.g. from updateItem) land in .catch.
-    const write = Promise.resolve()
-      .then(() =>
-        directus.request(
-          updateItem(SHOPS, shopDomain, {
-            status: "INSTALLED",
-            last_seen_at: now,
-            uninstalled_at: null,
-            session: {
-              id: session.id,
-              expires: session.expires,
-              data: session.data,
-            },
-          }),
-        ),
-      )
-      .catch(() =>
-        fetch(`https://${_session.shop}/admin/api/${apiVersion}/graphql.json`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Shopify-Access-Token": _session.accessToken,
-          },
-          body: JSON.stringify({ query: `query { shop { id } }` }),
-        })
-          .then((res) => res.json())
-          .then((json) => {
-            const shopGid = json?.data?.shop?.id ?? null;
-
-            return directus.request(
-              createItem(SHOPS, {
-                gid: shopGid,
-                shop_domain: shopDomain,
-                shop_handle: shopDomain.replace(".myshopify.com", ""),
-                session: {
-                  id: session.id,
-                  expires: session.expires,
-                  data: session.data,
-                },
-                installed_at: now,
-                last_seen_at: now,
-                feeds: [
-                  {
-                    page: "HOME_PAGE",
-                    label: "CAROUSEL_HP_01",
-                    type: "CAROUSEL",
-                    settings: {
-                      media_auto_play: true,
-                      loop: false,
-                      slides_per_view: 7,
-                      speed: 0.7,
-                      auto_scroll: false,
-                    },
-                    gallery: {
-                      title: "Latest posts",
-                      type: "AUTO",
-                      shop: shopDomain,
-                    },
-                  },
-                ],
-              }),
-            );
-          })
-          .then(() => undefined)
-          .catch((error) => {
-            console.log(error, "---------in error");
-          }),
-      )
-      .catch((err) =>
-        logDirectusError(`storeSession(${session.id}) failed`, err),
-      )
-      .finally(() => {
-        if (pendingShopWrites.get(shopDomain) === write) {
-          pendingShopWrites.delete(shopDomain);
-        }
-      });
-
-    pendingShopWrites.set(shopDomain, write);
+    // DEBUG: external call disabled to measure load time
+    // // Start from a resolved Promise so synchronous throws (e.g. from updateItem) land in .catch.
+    // const write = Promise.resolve()
+    //   .then(() =>
+    //     directus.request(
+    //       updateItem(SHOPS, shopDomain, {
+    //         status: "INSTALLED",
+    //         last_seen_at: now,
+    //         uninstalled_at: null,
+    //         session: {
+    //           id: session.id,
+    //           expires: session.expires,
+    //           data: session.data,
+    //         },
+    //       }),
+    //     ),
+    //   )
+    //   .catch(() =>
+    //     fetch(`https://${_session.shop}/admin/api/${apiVersion}/graphql.json`, {
+    //       method: "POST",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         "X-Shopify-Access-Token": _session.accessToken,
+    //       },
+    //       body: JSON.stringify({ query: `query { shop { id } }` }),
+    //     })
+    //       .then((res) => res.json())
+    //       .then((json) => {
+    //         const shopGid = json?.data?.shop?.id ?? null;
+    //
+    //         return directus.request(
+    //           createItem(SHOPS, {
+    //             gid: shopGid,
+    //             shop_domain: shopDomain,
+    //             shop_handle: shopDomain.replace(".myshopify.com", ""),
+    //             session: {
+    //               id: session.id,
+    //               expires: session.expires,
+    //               data: session.data,
+    //             },
+    //             installed_at: now,
+    //             last_seen_at: now,
+    //             feeds: [
+    //               {
+    //                 page: "HOME_PAGE",
+    //                 label: "CAROUSEL_HP_01",
+    //                 type: "CAROUSEL",
+    //                 settings: {
+    //                   media_auto_play: true,
+    //                   loop: false,
+    //                   slides_per_view: 7,
+    //                   speed: 0.7,
+    //                   auto_scroll: false,
+    //                 },
+    //                 gallery: {
+    //                   title: "Latest posts",
+    //                   type: "AUTO",
+    //                   shop: shopDomain,
+    //                 },
+    //               },
+    //             ],
+    //           }),
+    //         );
+    //       })
+    //       .then(() => undefined)
+    //       .catch((error) => {
+    //         console.log(error, "---------in error");
+    //       }),
+    //   )
+    //   .catch((err) =>
+    //     logDirectusError(`storeSession(${session.id}) failed`, err),
+    //   )
+    //   .finally(() => {
+    //     if (pendingShopWrites.get(shopDomain) === write) {
+    //       pendingShopWrites.delete(shopDomain);
+    //     }
+    //   });
+    //
+    // pendingShopWrites.set(shopDomain, write);
     return Promise.resolve(true);
   }
 
@@ -170,22 +171,24 @@ export class DirectusSessionStorage {
     const cached = getCachedSession(id);
     if (cached) return Promise.resolve(cached);
 
-    return Promise.resolve()
-      .then(() => directus.request(readItem(SESSIONS, id)))
-      .then((row) => {
-        const session = rowToSession(row);
-        if (session) setCachedSession(id, session);
-        return session;
-      })
-      .catch((err) => {
-        const code = err?.errors?.[0]?.extensions?.code;
-
-        if (code === "FORBIDDEN" || code === "RECORD_NOT_UNIQUE") {
-          return undefined;
-        }
-        logDirectusError(`loadSession(${id}) failed`, err);
-        return undefined;
-      });
+    // DEBUG: external call disabled to measure load time
+    // return Promise.resolve()
+    //   .then(() => directus.request(readItem(SESSIONS, id)))
+    //   .then((row) => {
+    //     const session = rowToSession(row);
+    //     if (session) setCachedSession(id, session);
+    //     return session;
+    //   })
+    //   .catch((err) => {
+    //     const code = err?.errors?.[0]?.extensions?.code;
+    //
+    //     if (code === "FORBIDDEN" || code === "RECORD_NOT_UNIQUE") {
+    //       return undefined;
+    //     }
+    //     logDirectusError(`loadSession(${id}) failed`, err);
+    //     return undefined;
+    //   });
+    return Promise.resolve(undefined);
   }
 
   async deleteSession(id) {
