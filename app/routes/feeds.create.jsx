@@ -5,23 +5,33 @@ import { ResizablePreview } from "app/components/resizable-preview";
 import { useGalleries } from "app/hooks/useGalleries";
 import { useMutation } from "app/hooks/useMutation";
 import { apiFetch } from "app/lib/api-client";
+import { newFeedSettings } from "app/lib/app-settings";
+import { getAppSettings } from "app/lib/app-settings.server";
 import { requestAppWindowClose } from "app/lib/app-window";
 import {
   FEEDS_KEY,
-  FEED_DEFAULTS,
   FEED_PAGE_CODES,
   FEED_TYPES,
   SUPPORTED_FEED_TYPES,
   feedCreateWindowId,
 } from "app/lib/feeds";
+import { authenticate } from "app/shopify.server";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useLoaderData } from "react-router";
 
 // Placeholder tiles so the preview isn't empty before a gallery resolves.
 const PREVIEW_PLACEHOLDERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
+export async function loader({ request }) {
+  const { admin } = await authenticate.admin(request);
+  return { feedDefaults: (await getAppSettings(admin)).feed_defaults };
+}
+
 export default function CreateFeed() {
+  const { feedDefaults } = useLoaderData();
+
   // Both come off the URL (the "Add feed" menu builds it), so anything not in
   // the known set falls back to the default rather than reaching the API.
   const [type] = useQueryState(
@@ -36,7 +46,8 @@ export default function CreateFeed() {
   const formMethods = useForm({
     defaultValues: {
       gallery: { id: "" },
-      settings: { ...FEED_DEFAULTS[type] },
+      // The shop's defaults from Settings, for the fields this type has.
+      settings: newFeedSettings(type, feedDefaults),
     },
   });
 

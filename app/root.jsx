@@ -77,6 +77,7 @@ export default function App() {
               <s-app-nav>
                 <s-link href="/media-gallery">Media Gallery</s-link>
                 <s-link href="/manage-posts">Manage Posts</s-link>
+                <s-link href="/settings">Settings</s-link>
               </s-app-nav>
               <LoadingProgressBarProvider />
               <ScrollArea>

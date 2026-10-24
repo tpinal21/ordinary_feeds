@@ -11,10 +11,14 @@ const SCOPES = [
   // "instagram_business_manage_insights",
 ];
 
-function getRedirectUri() {
+export function getAppUrl() {
   const base = process.env.SHOPIFY_APP_URL_DEV || process.env.SHOPIFY_APP_URL;
   if (!base) throw new Error("SHOPIFY_APP_URL must be set");
-  return `${base.replace(/\/$/, "")}/auth/instagram/callback`;
+  return base.replace(/\/$/, "");
+}
+
+function getRedirectUri() {
+  return `${getAppUrl()}/auth/instagram/callback`;
 }
 
 function getSecret() {
@@ -120,4 +124,41 @@ export async function fetchProfileFromInstagram(accessToken) {
     throw new Error(`Profile fetch failed: ${JSON.stringify(data)}`);
   }
   return data;
+}
+
+// Meta's deauthorize and data deletion callbacks POST a `signed_request`:
+// `<base64url HMAC-SHA256 of payload>.<base64url JSON payload>`, signed with
+// the app secret. Returns the payload, or null if it wasn't signed by Meta.
+export function parseSignedRequest(signedRequest) {
+  if (!signedRequest || typeof signedRequest !== "string") return null;
+  const [encodedSig, payload] = signedRequest.split(".", 2);
+  if (!encodedSig || !payload) return null;
+
+  const sig = Buffer.from(encodedSig, "base64url");
+  const expected = crypto
+    .createHmac("sha256", process.env.META_APP_SECRET)
+    .update(payload)
+    .digest();
+  if (sig.length !== expected.length || !crypto.timingSafeEqual(sig, expected)) {
+    return null;
+  }
+
+  try {
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString());
+    if (data?.algorithm?.toUpperCase() !== "HMAC-SHA256") return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// One Instagram user can be connected to several shops; each connection is its
+// own row keyed `<instagram id>-<shop handle>`.
+export function instagramUserFilter(userId) {
+  return {
+    _or: [
+      { user_id: { _eq: String(userId) } },
+      { id: { _starts_with: `${userId}-` } },
+    ],
+  };
 }

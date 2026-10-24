@@ -5,13 +5,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "app/components/ui/accordion";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "app/components/ui/card";
 import { useFetch } from "app/hooks/useFetch";
 import { apiFetch } from "app/lib/api-client";
 import { parseAsString, useQueryState } from "nuqs";
@@ -72,19 +65,20 @@ export default function AppSetup({
   }, [isThemeBlockAdded]);
 
   return (
-    <div className="max-w-249.5 mx-auto p-4 flex flex-col">
+    <s-page>
       <h1 className="text-xl font-semibold mb-2">Get started!</h1>
       <p className="text-sm text-neutral-500 mb-4">
         Set up your Instagram feeds in minutes
       </p>
-      <Card>
-        <CardHeader>
-          <CardTitle>Setup Guide</CardTitle>
-          <CardDescription>
-            Follow these steps to set up your Instagram feeds
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <s-section>
+        <s-stack gap="small-200">
+          <s-stack gap="small-300">
+            <s-heading>Setup Guide</s-heading>
+            <s-paragraph>
+              Follow these steps to set up your Instagram feeds
+            </s-paragraph>
+          </s-stack>
+
           <Accordion
             value={[step]}
             className="border border-[#e3e3e3] rounded-md"
@@ -158,8 +152,8 @@ export default function AppSetup({
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </CardContent>
-      </Card>
-    </div>
+        </s-stack>
+      </s-section>
+    </s-page>
   );
 }

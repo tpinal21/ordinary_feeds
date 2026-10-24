@@ -41,89 +41,79 @@ export default function MediaGalleryList() {
   }, [galleries.length]);
 
   return (
-    <div className="max-w-249.5 mx-auto p-4 flex flex-col">
-      <div className={`flex gap-2 items-start ${enter}`}>
-        <s-button icon="arrow-left" variant="tertiary" href="/"></s-button>
-        <h1 className="text-xl font-semibold mb-2">Media gallery</h1>
-        <span className="ml-auto">
-          <s-button
-            icon="plus"
-            variant="primary"
-            accessibilitylabel="Create gallery"
-            href="/media-gallery/create"
-          >
-            Create gallery
-          </s-button>
-        </span>
-      </div>
-
-      <p className={`text-sm text-neutral-500 mb-4 ${enter}`} style={delay(75)}>
+    <s-page heading="Media Gallery" inlineSize="base">
+      <s-button
+        slot="primary-action"
+        icon="plus"
+        variant="primary"
+        accessibilitylabel="Create gallery"
+        href="/media-gallery/create"
+      >
+        Create gallery
+      </s-button>
+      <s-paragraph color="subdued" className={enter} style={delay(75)}>
         Organize your synced Instagram posts into galleries, then display them
         anywhere in your store.
-      </p>
+      </s-paragraph>
       <div className={enter} style={delay(150)}>
-        <s-section padding="none" accessibilitylabel="Puzzles table section">
-          <s-table loading={isLoading}>
-            <s-grid
-              slot="filters"
-              gap="small-200"
-              gridTemplateColumns="1fr auto"
-            >
+        <s-table loading={isLoading}>
+          <s-grid slot="filters">
+            <div className="-mx-2">
               <s-text-field
                 label="Search galleries"
                 labelAccessibilityVisibility="exclusive"
                 icon="search"
                 placeholder="Searching all galleries"
               />
-            </s-grid>
-            <s-table-header-row>
-              <s-table-header listSlot="primary">Title</s-table-header>
-              <s-table-header listSlot="secondary">Type</s-table-header>
-              <s-table-header format="numeric">Media count</s-table-header>
-              <s-table-header>
-                <span className="text-center inline-block w-full">Actions</span>
-              </s-table-header>
-            </s-table-header-row>
-            <s-table-body>
-              {galleries.map((gallery) => (
-                <s-table-row key={gallery?.id}>
-                  <s-table-cell>
-                    {gallery.title}
-                    <s-link
-                      id={`gallery-${gallery?.id}-title`}
+            </div>
+          </s-grid>
+          <s-table-header-row>
+            <s-table-header listSlot="primary">Title</s-table-header>
+            <s-table-header listSlot="secondary">Type</s-table-header>
+            <s-table-header format="numeric">Media count</s-table-header>
+            <s-table-header>
+              <span className="text-center inline-block w-full">Actions</span>
+            </s-table-header>
+          </s-table-header-row>
+          <s-table-body>
+            {galleries.map((gallery) => (
+              <s-table-row key={gallery?.id}>
+                <s-table-cell>
+                  {gallery.title}
+                  <s-link
+                    id={`gallery-${gallery?.id}-title`}
+                    href={`/media-gallery/${gallery?.id}`}
+                    tone="neutral"
+                  ></s-link>
+                </s-table-cell>
+                <s-table-cell>
+                  <s-badge>{gallery.type}</s-badge>
+                </s-table-cell>
+                <s-table-cell>
+                  <s-text fontVariantNumeric="tabular-nums">
+                    {gallery?.media?.length}
+                  </s-text>
+                </s-table-cell>
+                <s-table-cell>
+                  <div className="flex gap-1 justify-center">
+                    <s-button
+                      icon="edit"
+                      variant="tertiary"
                       href={`/media-gallery/${gallery?.id}`}
-                      tone="neutral"
-                    ></s-link>
-                  </s-table-cell>
-                  <s-table-cell>
-                    <s-badge>{gallery.type}</s-badge>
-                  </s-table-cell>
-                  <s-table-cell>
-                    <s-text fontVariantNumeric="tabular-nums">
-                      {gallery?.media?.length}
-                    </s-text>
-                  </s-table-cell>
-                  <s-table-cell>
-                    <div className="flex gap-1 justify-center">
-                      <s-button
-                        icon="edit"
-                        variant="tertiary"
-                        href={`/media-gallery/${gallery?.id}`}
-                      ></s-button>
-                      <s-button
-                        icon="delete"
-                        variant="tertiary"
-                        tone="critical"
-                        accessibilitylabel={`Delete ${gallery.title}`}
-                        onClick={() => setGalleryToDelete(gallery)}
-                      ></s-button>
-                    </div>
-                  </s-table-cell>
-                </s-table-row>
-              ))}
-            </s-table-body>
-          </s-table>
-        </s-section>
+                    ></s-button>
+                    <s-button
+                      icon="delete"
+                      variant="tertiary"
+                      tone="critical"
+                      accessibilitylabel={`Delete ${gallery.title}`}
+                      onClick={() => setGalleryToDelete(gallery)}
+                    ></s-button>
+                  </div>
+                </s-table-cell>
+              </s-table-row>
+            ))}
+          </s-table-body>
+        </s-table>
       </div>
 
       {galleryToDelete && (
@@ -159,6 +149,6 @@ export default function MediaGalleryList() {
           </TitleBar>
         </Modal>
       )}
-    </div>
+    </s-page>
   );
 }

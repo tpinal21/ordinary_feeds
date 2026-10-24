@@ -62,8 +62,8 @@ export default function SettingCard({ feeds }) {
       <TabsContent value="HOME_PAGE" className={enterFast}>
         <s-section>
           {!!feedFields?.length && (
-            <s-stack direction="block" gap="small-300">
-              <div className="inline-flex justify-between items-center">
+            <s-stack direction="block" gap="small-400">
+              <div className="inline-flex justify-between items-start">
                 <s-heading>Home page blocks</s-heading>
                 <div className="inline-flex gap-1 items-center">
                   <AddFeedButton page="HP" />
@@ -89,8 +89,8 @@ export default function SettingCard({ feeds }) {
       <TabsContent value="PRODUCT_PAGE" className={enterFast}>
         <s-section>
           {!!feedFields?.length && (
-            <s-stack direction="block" gap="small-300">
-              <div className="inline-flex justify-between items-center">
+            <s-stack direction="block" gap="small-400">
+              <div className="inline-flex justify-between items-start">
                 <s-heading>Product page blocks</s-heading>
                 <div className="inline-flex gap-1 items-center">
                   <AddFeedButton page="PP" />
@@ -116,8 +116,8 @@ export default function SettingCard({ feeds }) {
       <TabsContent value="COLLECTION_PAGE" className={enterFast}>
         <s-section>
           {!!feedFields?.length && (
-            <s-stack direction="block" gap="small-300">
-              <div className="inline-flex justify-between items-center">
+            <s-stack direction="block" gap="small-400">
+              <div className="inline-flex justify-between items-start">
                 <s-heading>Collection page blocks</s-heading>
                 <div className="inline-flex gap-1 items-center">
                   <AddFeedButton page="CP" />

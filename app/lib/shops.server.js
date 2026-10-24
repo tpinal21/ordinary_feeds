@@ -46,7 +46,16 @@ export async function getShopDetails(shopDomain) {
         "uninstalled_at",
         "theme_extension_enabled",
         "theme_extension_checked_at",
-        "instagram_account.*",
+        // Only what the admin UI reads — this goes to the browser, so never
+        // include `access_token`.
+        "instagram_account.status",
+        "instagram_account.username",
+        "instagram_account.name",
+        "instagram_account.media_count",
+        "instagram_account.followers_count",
+        "instagram_account.last_synced_at",
+        "instagram_account.last_sync_error",
+        "instagram_account.connected_at",
         ...FEED_FIELDS,
       ],
     }),

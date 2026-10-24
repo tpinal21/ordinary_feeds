@@ -6,6 +6,12 @@ export const GALLERIES_KEY = "/api/galleries";
 
 export const FEED_TYPES = ["CAROUSEL", "GRID", "POPUP"];
 
+// Ranges the feed editor and the app-wide feed defaults both offer.
+export const GRID_COLUMNS = [2, 3, 4, 5, 6];
+export const GRID_ROWS = [1, 2, 3, 4, 5, 6];
+export const BORDER_RADIUS_MAX = 32;
+export const ITEM_GAP_MAX = 40;
+
 // Popups aren't implemented yet — the "Add feed" menu offers the type but the
 // create route turns it away.
 export const SUPPORTED_FEED_TYPES = ["CAROUSEL", "GRID"];

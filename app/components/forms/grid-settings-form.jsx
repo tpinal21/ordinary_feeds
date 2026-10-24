@@ -3,6 +3,7 @@ import {
   MediaSettingsSection,
   SelectField,
 } from "app/components/forms/fields";
+import { GRID_COLUMNS, GRID_ROWS } from "app/lib/feeds";
 
 const ASPECT_RATIOS = [
   { label: "Square (1:1)", value: "1 / 1" },
@@ -53,13 +54,13 @@ export default function GridSettingsForm() {
           name="settings.columns"
           label="Columns"
           tooltip={COLUMNS_TOOLTIP}
-          options={[2, 3, 4, 5, 6]}
+          options={GRID_COLUMNS}
         />
         <SelectField
           name="settings.rows"
           label="Rows"
           tooltip={ROWS_TOOLTIP}
-          options={[1, 2, 3, 4, 5, 6]}
+          options={GRID_ROWS}
         />
         <SelectField
           name="settings.aspect_ratio"

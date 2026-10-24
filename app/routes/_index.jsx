@@ -46,25 +46,25 @@ export default function Index() {
           <s-section>
             <s-stack direction="block" gap="small">
               <s-heading>Clicks</s-heading>
-              <s-text fontVariantNumeric="tabular-nums">102</s-text>
+              <s-number>102</s-number>
             </s-stack>
           </s-section>
           <s-section>
             <s-stack direction="block" gap="small">
               <s-heading>Impressions</s-heading>
-              <s-text fontVariantNumeric="tabular-nums">12,123</s-text>
+              <s-number>12,123</s-number>
             </s-stack>
           </s-section>
           <s-section>
             <s-stack direction="block" gap="small">
               <s-heading>Impressions</s-heading>
-              <s-text fontVariantNumeric="tabular-nums">12,123</s-text>
+              <s-number>12,123</s-number>
             </s-stack>
           </s-section>
           <s-section>
             <s-stack direction="block" gap="small">
               <s-heading>Impressions</s-heading>
-              <s-text fontVariantNumeric="tabular-nums">12,123</s-text>
+              <s-number>12,123</s-number>
             </s-stack>
           </s-section>
         </s-grid>

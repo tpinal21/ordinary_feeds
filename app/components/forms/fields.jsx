@@ -8,6 +8,7 @@ import {
 } from "app/components/ui/select";
 import { Slider } from "app/components/ui/slider";
 import { useGalleries } from "app/hooks/useGalleries";
+import { BORDER_RADIUS_MAX, ITEM_GAP_MAX } from "app/lib/feeds";
 import { Controller, useFormContext } from "react-hook-form";
 
 // One labelled row of the settings panel. `alignStart` is for controls taller
@@ -170,12 +171,12 @@ export const AppearanceFields = () => (
     <PixelSliderField
       name="settings.border_radius"
       label="Corner radius"
-      max={32}
+      max={BORDER_RADIUS_MAX}
     />
     <PixelSliderField
       name="settings.item_gap"
       label="Space between items"
-      max={40}
+      max={ITEM_GAP_MAX}
     />
   </>
 );
