@@ -1,6 +1,27 @@
+/**
+ * Sizing rules are copied from app/carousel.css so the storefront lays out
+ * exactly like the app preview. Keep the two in sync:
+ *
+ *   --insta-per-view   slides visible at --insta-design-width
+ *   --insta-gap        space between two neighbouring slides
+ *   --insta-radius     slide corner radius
+ */
 .insta-carousel {
+  --insta-per-view: 4;
+  --insta-gap: 0px;
+  --insta-radius: 0px;
+
+  --insta-design-width: 1080px;
+  --insta-slide-width: calc(var(--insta-design-width) / var(--insta-per-view));
+
+  container-type: inline-size;
   position: relative;
-  width: 100%;
+  /* Inline-size containment makes this element report 0 intrinsic width, so a
+     theme wrapper that shrink-wraps its blocks collapses it to nothing.
+     Claiming the full viewport, capped at the parent's width, gives the wrapper
+     something to grow to while still filling it exactly. */
+  width: 100vw;
+  max-width: 100%;
   padding: 1rem 0;
 }
 
@@ -16,29 +37,45 @@
 .insta-carousel__container {
   display: flex;
   touch-action: pan-y pinch-zoom;
-  margin-left: calc(var(--insta-gap, 12px) * -1);
+  /* Few slides sit centred, like the app's `justify-center-safe`. */
+  justify-content: safe center;
 }
 
 .insta-carousel__slide {
-  flex: 0 0 calc(100% / var(--insta-per-view, 4));
+  flex: 0 0 var(--insta-slide-width);
   min-width: 0;
-  padding-left: var(--insta-gap, 12px);
+  padding-inline: calc(var(--insta-gap) / 2);
 }
 
+/* Phones ignore --insta-per-view — anything denser than two is unusable. */
+@container (max-width: 424px) {
+  .insta-carousel__slide {
+    flex-basis: 50%;
+  }
+}
+
+/* Card look mirrors app/components/post-card.jsx. */
 .insta-carousel__media {
   position: relative;
-  aspect-ratio: 9 / 16;
   overflow: hidden;
-  /* border-radius: var(--insta-radius, 8px); */
-  background: #f2f2f2;
+  border: 1px solid #d4d4d4;
+  border-radius: var(--insta-radius);
+  background: #f5f5f5;
   cursor: pointer;
 }
 
 .insta-carousel__video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  object-fit: contain;
+  filter: brightness(0.75);
+  transition: filter 150ms ease;
+}
+
+.insta-carousel__media:hover .insta-carousel__video {
+  filter: brightness(1);
 }
 
 .insta-carousel__progress {
@@ -54,6 +91,7 @@
   width: 0;
   height: 100%;
   background: #fff;
+  transition: width 150ms ease;
 }
 
 .insta-carousel__mute {
@@ -66,14 +104,14 @@
   border: 0;
   border-radius: 9999px;
   background: rgba(82, 82, 82, 0.2);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(12px);
   color: #fff;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 150ms ease;
 }
 
 .insta-carousel__media:hover .insta-carousel__mute {
@@ -98,40 +136,40 @@
   display: block;
 }
 
+/* Arrows mirror CarouselPrevious / CarouselNext in app/components/ui/carousel.jsx. */
 .insta-carousel__btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
+  padding: 4px;
+  border: 0;
   border-radius: 9999px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: #fff;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(4px);
+  color: inherit;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   touch-action: manipulation;
-  z-index: 1;
+  z-index: 10;
 }
 
-.insta-carousel__btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.insta-carousel__btn:hover {
+  background: rgba(163, 163, 163, 0.5);
 }
 
 .insta-carousel__btn--prev {
-  left: -12px;
+  left: 8px;
 }
 
 .insta-carousel__btn--next {
-  right: -12px;
+  right: 8px;
 }
 
 .insta-carousel__btn svg {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
 }
 
 .insta-carousel__sr {

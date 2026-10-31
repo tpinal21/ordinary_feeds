@@ -1,4 +1,8 @@
 (function () {
+  // When media auto play is on, videos loop just the first few seconds as a
+  // teaser until the card is hovered — same as PREVIEW_SECONDS in PostCard.
+  var PREVIEW_SECONDS = 3;
+
   function init(root) {
     if (!window.EmblaCarousel || root.dataset.emblaInitialized) return;
     root.dataset.emblaInitialized = "true";
@@ -10,10 +14,28 @@
 
     var loop = root.dataset.loop === "true";
     var autoScroll = root.dataset.autoScroll === "true";
-    var embla = window.EmblaCarousel(viewport, {
-      loop: loop,
-      dragFree: autoScroll,
-    });
+    var mediaAutoPlay = root.dataset.mediaAutoPlay === "true";
+    var speed = parseFloat(root.dataset.speed) || 1;
+
+    // Options and plugin config mirror app/components/feed-carousel.jsx.
+    var plugins = [];
+    if (autoScroll && window.EmblaCarouselAutoScroll) {
+      plugins.push(
+        window.EmblaCarouselAutoScroll({
+          startDelay: 0,
+          speed: speed,
+          stopOnInteraction: false,
+          stopOnMouseEnter: true,
+          stopOnFocusIn: false,
+        }),
+      );
+    }
+
+    var embla = window.EmblaCarousel(
+      viewport,
+      { loop: loop, dragFree: autoScroll },
+      plugins,
+    );
 
     function update() {
       if (prevBtn) prevBtn.disabled = !embla.canScrollPrev();
@@ -37,19 +59,20 @@
     embla.on("reInit", update);
     update();
 
-    // Per-slide video behavior, mirroring the app's PostCard:
-    // hover to play, leave to reset, click to toggle, plus a mute button and
-    // a progress bar tracking playback. Mute is a single shared state for the
-    // whole carousel — toggling any card's button mutes/unmutes every video.
+    // Per-card video behavior, mirroring the app's PostCard. Only one card may
+    // have sound at a time: `activeCard` is that card (null = all muted).
     var cards = [];
-    var muted = true;
+    var activeCard = null;
 
-    function applyMuted() {
-      cards.forEach(function (entry) {
-        entry.video.muted = muted;
-        entry.card.classList.toggle("is-unmuted", !muted);
-        if (entry.muteBtn) {
-          entry.muteBtn.setAttribute(
+    function setActive(entry) {
+      if (activeCard === entry) return;
+      activeCard = entry;
+      cards.forEach(function (c) {
+        var muted = c !== activeCard;
+        c.video.muted = muted;
+        c.card.classList.toggle("is-unmuted", !muted);
+        if (c.muteBtn) {
+          c.muteBtn.setAttribute(
             "aria-label",
             muted ? "Unmute video" : "Mute video",
           );
@@ -62,80 +85,68 @@
       if (!video) return;
       var bar = card.querySelector("[data-insta-progress]");
       var muteBtn = card.querySelector("[data-insta-mute]");
-      cards.push({ card: card, video: video, muteBtn: muteBtn });
+      var entry = {
+        card: card,
+        video: video,
+        muteBtn: muteBtn,
+        hovering: false,
+      };
+      cards.push(entry);
 
-      video.muted = muted;
+      video.muted = true;
+
+      function resetProgress() {
+        if (bar) bar.style.width = "0%";
+      }
 
       card.addEventListener("mouseenter", function () {
+        entry.hovering = true;
+        // If another card currently has sound, move it to this one.
+        if (activeCard !== null) setActive(entry);
+        // Continue playing from the current position through to the end.
         video.play().catch(function () {});
       });
+
       card.addEventListener("mouseleave", function () {
-        video.pause();
+        entry.hovering = false;
         video.currentTime = 0;
-        if (bar) bar.style.width = "0%";
+        resetProgress();
+        if (mediaAutoPlay) {
+          // Back to the short preview loop.
+          video.play().catch(function () {});
+        } else {
+          video.pause();
+        }
       });
+
       card.addEventListener("click", function () {
         if (video.paused) video.play().catch(function () {});
         else video.pause();
       });
 
       video.addEventListener("timeupdate", function () {
-        if (!bar || !video.duration) return;
-        bar.style.width = (video.currentTime / video.duration) * 100 + "%";
+        if (!video.duration) return;
+        // While previewing (auto play on, not hovered), loop just the teaser
+        // and keep the progress bar hidden.
+        if (mediaAutoPlay && !entry.hovering) {
+          if (video.currentTime >= PREVIEW_SECONDS) video.currentTime = 0;
+          return;
+        }
+        if (bar) {
+          bar.style.width = (video.currentTime / video.duration) * 100 + "%";
+        }
       });
 
       if (muteBtn) {
         muteBtn.addEventListener("click", function (e) {
           e.stopPropagation();
-          // Single shared state: toggle once, apply to every card.
-          muted = !muted;
-          applyMuted();
+          // Unmute this card (muting every other), or mute it if it already had sound.
+          setActive(activeCard === entry ? null : entry);
         });
       }
+
+      if (mediaAutoPlay) video.play().catch(function () {});
     });
-
-    if (root.dataset.autoplay === "true") {
-      var delay = (parseInt(root.dataset.autoplayDelay, 10) || 4) * 1000;
-      var timer = null;
-      var paused = false;
-
-      function tick() {
-        if (paused || document.hidden) return;
-        if (embla.canScrollNext()) embla.scrollNext();
-        else if (loop) embla.scrollNext();
-        else embla.scrollTo(0);
-      }
-
-      function start() {
-        stop();
-        timer = setInterval(tick, delay);
-      }
-      function stop() {
-        if (timer) {
-          clearInterval(timer);
-          timer = null;
-        }
-      }
-
-      root.addEventListener("mouseenter", function () {
-        paused = true;
-      });
-      root.addEventListener("mouseleave", function () {
-        paused = false;
-      });
-      root.addEventListener("focusin", function () {
-        paused = true;
-      });
-      root.addEventListener("focusout", function () {
-        paused = false;
-      });
-      document.addEventListener("visibilitychange", function () {
-        if (document.hidden) stop();
-        else start();
-      });
-
-      start();
-    }
   }
 
   function initAll() {

@@ -114,6 +114,9 @@ importers:
       '@shopify/polaris-types':
         specifier: 2.0.0
         version: 2.0.0
+      '@shopify/prettier-plugin-liquid':
+        specifier: ^1.11.3
+        version: 1.11.3(prettier@3.9.6)
       '@types/eslint':
         specifier: ^9.6.1
         version: 9.6.1
@@ -1509,8 +1512,16 @@ packages:
     peerDependencies:
       graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
 
+  '@shopify/liquid-html-parser@2.11.0':
+    resolution: {integrity: sha512-vgrCl9dxPXflxjbEshNXAi/n09pJpyh7RTvHHHQb5AlUw3p7Jz565v+8jNvsaGv8s85MiWkrSW8r9Ojzpx9yMw==}
+
   '@shopify/polaris-types@2.0.0':
     resolution: {integrity: sha512-G1nv58jrTVvR07cBzIybtM66/wFykUyyBab4WSncV08ZmWamPfbs6bv3c0wC4UTDz4f2V0et0HbqLsBH8ZkJCQ==}
+
+  '@shopify/prettier-plugin-liquid@1.11.3':
+    resolution: {integrity: sha512-95I7LRTsSIT7RJ6SNjGNgb38y16EQokHFmZ/T3THpSOWTWOvOJ9EWTTjXEuTfQs2GjR5DHumMQwBqhr3SrNZsQ==}
+    peerDependencies:
+      prettier: ^2.0.0 || ^3.0.0
 
   '@shopify/shopify-api@15.0.1':
     resolution: {integrity: sha512-WLRmMar1JoMxqAYNvlPxukqEu/gYZ+tSICy8IkpVFa9erInI3xP/rEmWDtxCC0ZG1E41B6VsZFlFfKwQOrdKfQ==}
@@ -3010,6 +3021,9 @@ packages:
     resolution: {integrity: sha512-r8AO2mYHoLxSHkgafNeC/BXyb2vWRxD3jem4Ts+ptav8oTG5FIRifAjuJEmZI4bSvvc2ns0GxmIYiZnHqN3mMw==}
     engines: {node: '>=16.9.0'}
 
+  html-styles@1.0.0:
+    resolution: {integrity: sha512-cDl5dcj73oI4Hy0DSUNh54CAwslNLJRCCoO+RNkVo+sBrjA/0+7E/xzvj3zH/GxbbBLGJhE0hBe1eg+0FINC6w==}
+
   http-errors@2.0.1:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
@@ -3304,6 +3318,9 @@ packages:
     resolution: {integrity: sha512-e6rvdUCiQCAuumZslxRJWR/Doq4VpPR82kqclvcS0efgt430SlGIk05vdCN58+VrzgtIcfNODjozVielycD4Sw==}
     engines: {node: '>=16'}
 
+  isarray@1.0.0:
+    resolution: {integrity: sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ==}
+
   isarray@2.0.5:
     resolution: {integrity: sha512-xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw==}
 
@@ -3317,6 +3334,10 @@ packages:
   isexe@3.1.5:
     resolution: {integrity: sha512-6B3tLtFqtQS4ekarvLVMZ+X+VlvQekbe4taUkf/rhVO3d/h0M2rfARm/pXLcPEsjjMsFgrFgSrhQIxcSVrBz8w==}
     engines: {node: '>=18'}
+
+  isobject@2.1.0:
+    resolution: {integrity: sha512-+OUdGJlgjOBZDfxnDjYYG6zp487z0JGNQq3cYQYg5f5hKR+syHMsaztzGeml/4kGG55CSpKSpWTY+jYGgsHLgA==}
+    engines: {node: '>=0.10.0'}
 
   isomorphic-ws@5.0.0:
     resolution: {integrity: sha512-muId7Zzn9ywDsyXgTIafTry2sV3nySZeUDe6YedVd1Hvuuep5AsIlqK+XefWpYTyJG5e503F2xIuT2lcU6rCSw==}
@@ -3493,6 +3514,9 @@ packages:
   lightningcss@1.32.0:
     resolution: {integrity: sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ==}
     engines: {node: '>= 12.0.0'}
+
+  line-column@1.0.2:
+    resolution: {integrity: sha512-Ktrjk5noGYlHsVnYWh62FLVs4hTb8A3e+vucNZMgPeAOITdshMSgv4cCZQeRDjm7+goqmo6+liZwTXo+U3sVww==}
 
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
@@ -6352,7 +6376,17 @@ snapshots:
     transitivePeerDependencies:
       - graphql-sock
 
+  '@shopify/liquid-html-parser@2.11.0':
+    dependencies:
+      line-column: 1.0.2
+
   '@shopify/polaris-types@2.0.0': {}
+
+  '@shopify/prettier-plugin-liquid@1.11.3(prettier@3.9.6)':
+    dependencies:
+      '@shopify/liquid-html-parser': 2.11.0
+      html-styles: 1.0.0
+      prettier: 3.9.6
 
   '@shopify/shopify-api@15.0.1':
     dependencies:
@@ -8121,6 +8155,8 @@ snapshots:
 
   hono@4.13.3: {}
 
+  html-styles@1.0.0: {}
+
   http-errors@2.0.1:
     dependencies:
       depd: 2.0.0
@@ -8400,6 +8436,8 @@ snapshots:
     dependencies:
       is-inside-container: 1.0.0
 
+  isarray@1.0.0: {}
+
   isarray@2.0.5: {}
 
   isbot@5.2.1: {}
@@ -8407,6 +8445,10 @@ snapshots:
   isexe@2.0.0: {}
 
   isexe@3.1.5: {}
+
+  isobject@2.1.0:
+    dependencies:
+      isarray: 1.0.0
 
   isomorphic-ws@5.0.0(ws@8.21.3):
     dependencies:
@@ -8548,6 +8590,11 @@ snapshots:
       lightningcss-linux-x64-musl: 1.32.0
       lightningcss-win32-arm64-msvc: 1.32.0
       lightningcss-win32-x64-msvc: 1.32.0
+
+  line-column@1.0.2:
+    dependencies:
+      isarray: 1.0.0
+      isobject: 2.1.0
 
   lines-and-columns@1.2.4: {}
 

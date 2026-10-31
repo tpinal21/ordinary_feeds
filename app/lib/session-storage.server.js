@@ -114,25 +114,6 @@ export class DirectusSessionStorage {
             },
             installed_at: now,
             last_seen_at: now,
-            feeds: [
-              {
-                page: "HOME_PAGE",
-                label: "CAROUSEL_HP_01",
-                type: "CAROUSEL",
-                settings: {
-                  media_auto_play: true,
-                  loop: false,
-                  slides_per_view: 7,
-                  speed: 0.7,
-                  auto_scroll: false,
-                },
-                gallery: {
-                  title: "Latest posts",
-                  type: "AUTO",
-                  shop: shopDomain,
-                },
-              },
-            ],
           }),
         );
       } catch (error) {

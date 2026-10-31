@@ -59,6 +59,7 @@
     "@shopify/api-codegen-preset": "^1.2.0",
     "@shopify/cli": "^4.2.0",
     "@shopify/polaris-types": "2.0.0",
+    "@shopify/prettier-plugin-liquid": "^1.11.3",
     "@types/eslint": "^9.6.1",
     "@types/node": "^22.18.8",
     "@types/react": "^18.3.25",

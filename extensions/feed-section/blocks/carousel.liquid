@@ -1,23 +1,41 @@
 {{ 'carousel.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'embla-carousel.umd.js' | asset_url }}" defer></script>
+<script src="{{ 'embla-carousel-auto-scroll.umd.js' | asset_url }}" defer></script>
 <script src="{{ 'carousel.js' | asset_url }}" defer></script>
 
 {%- liquid
-  assign feed = shop.metafields["$app"].metafields.value
-  assign posts = feed.videos | default: empty
+  # The merchant picks a `$app:feed` metaobject (synced from the app) in the
+  # theme editor; its gallery reference resolves straight to the posts.
+  assign feed = block.settings.feed
+  assign posts = feed.gallery.value.posts.value
 
-  # All carousel settings are managed from the app (SettingCard) and persisted
-  # as the `carousel_setting` group inside the `$app.settings` JSON metafield.
-  # App-wide settings (the Settings page) live at the top level of it.
-  assign app_settings = shop.metafields["$app"].settings.value
-  assign carousel = app_settings.carousel_setting
-  assign cs_loop = carousel.loop | default: false
-  assign cs_autoplay = carousel.auto_scroll | default: false
-  assign cs_per_view = carousel.slides_per_view | default: 5
+  # Per-feed settings. Fallbacks mirror CAROUSEL_FEED_DEFAULTS in
+  # app/lib/feeds.js; `allow_false` keeps a stored `false` from being swapped
+  # for the default.
+  assign carousel = feed.settings.value
+  assign cs_loop = carousel.loop | default: true, allow_false: true
+  assign cs_auto_scroll = carousel.auto_scroll | default: false, allow_false: true
+  assign cs_media_auto_play = carousel.media_auto_play | default: false, allow_false: true
+  assign cs_per_view = carousel.slides_per_view | default: 7
   assign cs_speed = carousel.speed | default: 1
+  assign cs_gap = carousel.item_gap | default: 8, allow_false: true
+  assign cs_radius = carousel.border_radius | default: 8, allow_false: true
+
+  # App-wide settings (the Settings page).
+  assign app_settings = shop.metafields["$app"].settings.value
 -%}
 
-{% if app_settings.storefront_enabled != false and posts != empty and posts.size > 0 %}
+{% if feed == blank or posts == blank or posts.size == 0 %}
+  {% if request.design_mode %}
+    <p class="insta-carousel__placeholder" {{ block.shopify_attributes }}>
+      {% if feed == blank %}
+        Select a feed in this block's settings.
+      {% else %}
+        The selected feed has no posts yet.
+      {% endif %}
+    </p>
+  {% endif %}
+{% elsif app_settings.storefront_enabled != false %}
   <div
     id="insta-carousel"
     class="insta-carousel"
@@ -26,24 +44,26 @@
     tabindex="0"
     data-insta-carousel
     data-loop="{{ cs_loop }}"
-    data-autoplay="{{ cs_autoplay }}"
+    data-auto-scroll="{{ cs_auto_scroll }}"
     data-speed="{{ cs_speed }}"
-    style="--insta-per-view: {{ cs_per_view }};--insta-gap: 0px"
+    data-media-auto-play="{{ cs_media_auto_play }}"
+    style="--insta-per-view: {{ cs_per_view }};--insta-gap: {{ cs_gap }}px;--insta-radius: {{ cs_radius }}px"
     {{ block.shopify_attributes }}
   >
     <div class="insta-carousel__viewport">
       <div class="insta-carousel__container">
         {% for post in posts %}
           {%- liquid
-            assign poster = post.thumbnail_url | default: post.media_url
-            assign alt_text = post.caption | default: 'Instagram post' | strip_html | truncate: 80
+            assign media_url = post.media_url.value
+            assign poster = post.thumbnail_url.value | default: media_url
+            assign alt_text = post.caption.value | default: 'Instagram post' | strip_html | truncate: 80
           -%}
           <div class="insta-carousel__slide" role="group" aria-roledescription="slide" data-insta-card>
             <div class="insta-carousel__media">
               <video
                 class="insta-carousel__video"
                 data-insta-video
-                src="{{ post.media_url }}"
+                src="{{ media_url }}"
                 poster="{{ poster }}"
                 aria-label="{{ alt_text | escape }}"
                 muted
@@ -68,6 +88,8 @@
       </div>
     </div>
 
+    {%- comment -%} Same as the app: auto-scrolling feeds have no arrows. {%- endcomment -%}
+    {% unless cs_auto_scroll %}
     <button type="button" class="insta-carousel__btn insta-carousel__btn--prev" aria-label="Previous slide">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="m15 18-6-6 6-6"/>
@@ -80,6 +102,7 @@
       </svg>
       <span class="insta-carousel__sr">Next slide</span>
     </button>
+    {% endunless %}
   </div>
 {% endif %}
 
@@ -87,6 +110,14 @@
 {
   "name": "Insta Carousel",
   "target": "section",
-  "settings": []
+  "settings": [
+    {
+      "type": "metaobject",
+      "id": "feed",
+      "label": "Feed",
+      "metaobject_type": "app--393150267393--feed",
+      "info": "Feeds are created and edited in the app."
+    }
+  ]
 }
 {% endschema %}
