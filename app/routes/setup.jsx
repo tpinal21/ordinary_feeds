@@ -29,11 +29,14 @@ export default function Index() {
   );
 
   useEffect(() => {
-    if (searchParams.ig_connected == "1") {
-      shopify.toast.show("Instagram connected successfully!");
-      setTimeout(() => navigate("/"), 1000);
-    }
-  }, [searchParams.ig_connected]);
+    if (searchParams.ig_connected !== "1") return;
+
+    shopify.toast.show("Instagram connected successfully!");
+    const timer = setTimeout(() => {
+      setSearchParams({ ig_connected: "", step: "create-feed" });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [searchParams.ig_connected, setSearchParams]);
 
   return (
     <AppSetup

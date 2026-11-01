@@ -1,4 +1,6 @@
 import { FeedCard } from "app/components/feed-card";
+import FeedIllustration from "app/components/illustrations/feed-illustration";
+import { ThemeBlockNotices } from "app/components/theme-block-notices";
 import {
   Tabs,
   TabsContent,
@@ -15,12 +17,21 @@ import {
 } from "app/lib/feeds";
 import { Fragment, useEffect, useState } from "react";
 import { mutate } from "swr";
-import FeedIllustration from "app/components/illustrations/feed-illustration";
 
 const TABS = [
-  { value: "HOME_PAGE", label: "Home page" },
-  { value: "PRODUCT_PAGE", label: "Product page" },
-  { value: "COLLECTION_PAGE", label: "Collection page" },
+  { value: "HOME_PAGE", code: "HP", label: "Home page", noun: "home page" },
+  {
+    value: "PRODUCT_PAGE",
+    code: "PP",
+    label: "Product page",
+    noun: "product page",
+  },
+  {
+    value: "COLLECTION_PAGE",
+    code: "CP",
+    label: "Collection page",
+    noun: "collection page",
+  },
 ];
 
 const FEED_STYLES = {
@@ -29,11 +40,11 @@ const FEED_STYLES = {
   POPUP: { label: "POPUP", icon: "layout-popup" },
 };
 
-export default function SettingCard({ feeds }) {
+export default function SettingCard({ feeds, usedInSetup = false }) {
   const [currentTab, setcurrentTab] = useState("HOME_PAGE");
 
-  const feedFields = feeds
-    ?.map((feed) => ({
+  const feedFields = (feeds ?? [])
+    .map((feed) => ({
       ...feed,
       settings: feedSettings(feed),
     }))
@@ -46,6 +57,13 @@ export default function SettingCard({ feeds }) {
       value={currentTab}
       onValueChange={setcurrentTab}
     >
+      {/* The setup's own "Add to theme" step shows these there. */}
+      {!usedInSetup && !!feeds?.length && (
+        <div className="flex flex-col gap-2 mb-3">
+          <ThemeBlockNotices />
+        </div>
+      )}
+
       <TabsList className="w-full p-0 bg-transparent">
         {TABS.map((tab, index) => (
           <TabsTrigger
@@ -59,87 +77,39 @@ export default function SettingCard({ feeds }) {
         ))}
       </TabsList>
 
-      <TabsContent value="HOME_PAGE" className={enterFast}>
-        <s-section>
-          {!!feedFields?.length && (
-            <s-stack direction="block" gap="small-400">
-              <div className="inline-flex justify-between items-start">
-                <s-heading>Home page blocks</s-heading>
-                <div className="inline-flex gap-1 items-center">
-                  <AddFeedButton page="HP" />
+      {TABS.map((tab) => (
+        <TabsContent key={tab.value} value={tab.value} className={enterFast}>
+          <s-section>
+            {!!feedFields.length && (
+              <s-stack direction="block" gap="small-400">
+                <div className="inline-flex justify-between items-start">
+                  {/* Setup is a guided step, so it skips the heading but
+                      still lets the merchant add more feeds. */}
+                  {!usedInSetup && <s-heading>{tab.label} blocks</s-heading>}
+                  <div className="inline-flex gap-1 items-center ml-auto">
+                    <AddFeedButton page={tab.code} />
+                  </div>
                 </div>
-              </div>
-              <s-description>
-                Add one or more feeds to your home page. Each feed can use a
-                different style.
-              </s-description>
-            </s-stack>
-          )}
-          <div className="flex flex-col gap-3 mt-3">
-            {feedFields.length === 0 ? (
-              <EmptyStateCard page="HP" />
-            ) : (
-              feedFields.map((feed) => (
-                <FeedCard key={feed.id} feed={feed} onRemove={() => {}} />
-              ))
+                {!usedInSetup && (
+                  <s-description>
+                    Add one or more feeds to your {tab.noun}. Each feed can use
+                    a different style.
+                  </s-description>
+                )}
+              </s-stack>
             )}
-          </div>
-        </s-section>
-      </TabsContent>
-      <TabsContent value="PRODUCT_PAGE" className={enterFast}>
-        <s-section>
-          {!!feedFields?.length && (
-            <s-stack direction="block" gap="small-400">
-              <div className="inline-flex justify-between items-start">
-                <s-heading>Product page blocks</s-heading>
-                <div className="inline-flex gap-1 items-center">
-                  <AddFeedButton page="PP" />
-                </div>
-              </div>
-              <s-description>
-                Add one or more feeds to your product page. Each feed can use a
-                different style.
-              </s-description>
-            </s-stack>
-          )}
-          <div className="flex flex-col gap-3 mt-3">
-            {feedFields.length === 0 ? (
-              <EmptyStateCard page="PP" />
-            ) : (
-              feedFields.map((feed) => (
-                <FeedCard key={feed.id} feed={feed} onRemove={() => {}} />
-              ))
-            )}
-          </div>
-        </s-section>
-      </TabsContent>
-      <TabsContent value="COLLECTION_PAGE" className={enterFast}>
-        <s-section>
-          {!!feedFields?.length && (
-            <s-stack direction="block" gap="small-400">
-              <div className="inline-flex justify-between items-start">
-                <s-heading>Collection page blocks</s-heading>
-                <div className="inline-flex gap-1 items-center">
-                  <AddFeedButton page="CP" />
-                </div>
-              </div>
-              <s-description>
-                Add one or more feeds to your collection page. Each feed can use
-                a different style.
-              </s-description>
-            </s-stack>
-          )}
-          <div className="flex flex-col gap-3 mt-3">
-            {feedFields.length === 0 ? (
-              <EmptyStateCard page="CP" />
-            ) : (
-              feedFields.map((feed) => (
-                <FeedCard key={feed.id} feed={feed} onRemove={() => {}} />
-              ))
-            )}
-          </div>
-        </s-section>
-      </TabsContent>
+            <div className="flex flex-col gap-3 mt-3">
+              {feedFields.length === 0 ? (
+                <EmptyStateCard page={tab.code} />
+              ) : (
+                feedFields.map((feed) => (
+                  <FeedCard key={feed.id} feed={feed} onRemove={() => {}} />
+                ))
+              )}
+            </div>
+          </s-section>
+        </TabsContent>
+      ))}
     </Tabs>
   );
 }

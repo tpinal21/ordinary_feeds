@@ -18,6 +18,8 @@ import {
 import { authenticate } from "app/shopify.server";
 import { Controller, useForm, useFormContext } from "react-hook-form";
 import { useLoaderData, useOutletContext } from "react-router";
+import { THEME_BLOCKS_KEY } from "app/hooks/useThemeBlocks";
+import { mutate } from "swr";
 
 const RESET_MODAL_ID = "reset-settings-modal";
 
@@ -69,6 +71,8 @@ export default function Settings() {
     }
 
     shopify.toast.show(successMessage);
+    // Feed cards show whether the storefront switch hides them.
+    mutate(THEME_BLOCKS_KEY);
     // Reset onto the saved values so they become the new defaults — that's
     // what clears the save bar.
     reset(toFormValues(res.data), { keepDirty: false });

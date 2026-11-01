@@ -1,6 +1,8 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
 client_id = "3b9e30f80c88e0b9298e659620b2bf9b"
-name = "insta-feeds"
-application_url = "https://insta-feeds.vercel.app"
+name = "Ordinary - Shoppable feeds"
+application_url = "https://ordinary-feeds.vercel.app"
 embedded = true
 
 [build]
@@ -10,18 +12,25 @@ automatically_update_urls_on_dev = true
 api_version = "2026-07"
 
   [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
 
   [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
+[access.admin]
+direct_api_mode = "offline"
+embedded_app_direct_api_access = true
 
 [access_scopes]
-scopes = "write_products,write_metaobjects,write_metaobject_definitions,read_themes,write_themes"
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_themes,write_metaobject_definitions,write_metaobjects,write_products,write_themes"
+optional_scopes = [ ]
+use_legacy_install_flow = false
 
 [auth]
-redirect_urls = [ "https://insta-feeds.vercel.app/api/auth" ]
+redirect_urls = [ "https://ordinary-feeds.vercel.app/api/auth" ]
 
 [shop.metafields.app.insta_feed_posts]
 type = "json"
@@ -36,70 +45,73 @@ description = "Carousel and feed display settings configured in the app."
 [metaobjects.app.post]
 name = "Instagram post"
 display_name_field = "permalink"
-access.storefront = "public_read"
 
-  [metaobjects.app.post.fields.media_type]
-  name = "Media type"
-  type = "single_line_text_field"
-  required = true
-  [metaobjects.app.post.fields.media_url]
-  name = "Media URL"
-  type = "single_line_text_field"
-  required = true
+  [metaobjects.app.post.access]
+  storefront = "public_read"
 
-  [metaobjects.app.post.fields.thumbnail_url]
-  name = "Thumbnail URL"
-  type = "single_line_text_field"
+[metaobjects.app.post.fields.media_type]
+name = "Media type"
+type = "single_line_text_field"
+required = true
 
-  [metaobjects.app.post.fields.permalink]
-  name = "Permalink"
-  type = "url"
+[metaobjects.app.post.fields.media_url]
+name = "Media URL"
+type = "single_line_text_field"
+required = true
 
-  [metaobjects.app.post.fields.caption]
-  name = "Caption"
-  type = "multi_line_text_field"
+[metaobjects.app.post.fields.thumbnail_url]
+name = "Thumbnail URL"
+type = "single_line_text_field"
+
+[metaobjects.app.post.fields.permalink]
+name = "Permalink"
+type = "url"
+
+[metaobjects.app.post.fields.caption]
+name = "Caption"
+type = "multi_line_text_field"
 
 [metaobjects.app.gallery]
 name = "Gallery"
 display_name_field = "title"
-access.storefront = "public_read"
 
-  [metaobjects.app.gallery.fields.title]
-  name = "Title"
-  type = "single_line_text_field"
-  required = true
+  [metaobjects.app.gallery.access]
+  storefront = "public_read"
 
-  [metaobjects.app.gallery.fields.posts]
-  name = "Posts"
-  type = "list.metaobject_reference<$app:post>"
+[metaobjects.app.gallery.fields.title]
+name = "Title"
+type = "single_line_text_field"
+required = true
+
+[metaobjects.app.gallery.fields.posts]
+name = "Posts"
+type = "list.metaobject_reference<$app:post>"
 
 [metaobjects.app.feed]
 name = "Feed"
 display_name_field = "label"
-access.storefront = "public_read"
 
-  [metaobjects.app.feed.fields.label]
-  name = "Label"
-  type = "single_line_text_field"
-  required = true
+  [metaobjects.app.feed.access]
+  storefront = "public_read"
 
-  [metaobjects.app.feed.fields.type]
-  name = "Type"
-  type = "single_line_text_field"
-  required = true
+[metaobjects.app.feed.fields.label]
+name = "Label"
+type = "single_line_text_field"
+required = true
 
-  [metaobjects.app.feed.fields.page]
-  name = "Page"
-  type = "single_line_text_field"
+[metaobjects.app.feed.fields.type]
+name = "Type"
+type = "single_line_text_field"
+required = true
 
-  [metaobjects.app.feed.fields.settings]
-  name = "Settings"
-  type = "json"
+[metaobjects.app.feed.fields.page]
+name = "Page"
+type = "single_line_text_field"
 
-  [metaobjects.app.feed.fields.gallery]
-  name = "Gallery"
-  type = "metaobject_reference<$app:gallery>"
+[metaobjects.app.feed.fields.settings]
+name = "Settings"
+type = "json"
 
-[access.admin]
-embedded_app_direct_api_access = true
-direct_api_mode = "offline"
+[metaobjects.app.feed.fields.gallery]
+name = "Gallery"
+type = "metaobject_reference<$app:gallery>"

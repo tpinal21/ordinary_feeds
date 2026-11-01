@@ -90,7 +90,9 @@ export default function App() {
                       </s-banner>
                     }
                   >
-                    {(shopDetails) => <Outlet context={{ shopDetails }} />}
+                    {(shopDetails) => (
+                      <Outlet context={{ shopDetails, apiKey }} />
+                    )}
                   </Await>
                 </Suspense>
               </ScrollArea>

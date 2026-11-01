@@ -4,9 +4,53 @@
 <script src="{{ 'carousel.js' | asset_url }}" defer></script>
 
 {%- liquid
-  # The merchant picks a `$app:feed` metaobject (synced from the app) in the
-  # theme editor; its gallery reference resolves straight to the posts.
-  assign feed = block.settings.feed
+  # The merchant types a feed label from the app (e.g. CAROUSEL_HP_01) in the
+  # block settings; its gallery reference resolves straight to the posts.
+  # `$app:feed` isn't accepted in Liquid lookups, hence the full type name.
+  # Liquid only exposes the first 50 entries, far more feeds than a shop has.
+  assign feed_label = block.settings.feed | strip | upcase
+  assign feed = nil
+  assign wrong_page_feed = nil
+
+  # The feed page this template serves. A feed only renders on its own page
+  # type — a home page feed never shows on a product page, and so on.
+  case template.name
+    when 'index'
+      assign feed_page = 'HOME_PAGE'
+      assign default_label = 'CAROUSEL_HP_01'
+    when 'product'
+      assign feed_page = 'PRODUCT_PAGE'
+      assign default_label = 'CAROUSEL_PP_01'
+    when 'collection'
+      assign feed_page = 'COLLECTION_PAGE'
+      assign default_label = 'CAROUSEL_CP_01'
+  endcase
+
+  # Left empty: this page's first carousel feed. Labels are generated as
+  # <TYPE>_<PAGE>_<NN> (app/routes/api.feeds.jsx), so it's `_01` for the page.
+  if feed_label == blank
+    assign feed_label = default_label
+  endif
+
+  # Documented global is `metaobjects`, not `shop.metaobjects`.
+  assign feed_entries = metaobjects['app--393150267393--feed'].values
+
+  if feed_label != blank
+    for candidate in feed_entries
+      # Handle match: blocks saved while this setting was a metaobject picker
+      # still hold the feed's handle instead of its label.
+      assign candidate_handle = candidate.system.handle | upcase
+      if candidate.label.value == feed_label or candidate_handle == feed_label
+        if candidate.page.value == feed_page
+          assign feed = candidate
+        else
+          assign wrong_page_feed = candidate
+        endif
+        break
+      endif
+    endfor
+  endif
+
   assign posts = feed.gallery.value.posts.value
 
   # Per-feed settings. Fallbacks mirror CAROUSEL_FEED_DEFAULTS in
@@ -28,8 +72,30 @@
 {% if feed == blank or posts == blank or posts.size == 0 %}
   {% if request.design_mode %}
     <p class="insta-carousel__placeholder" {{ block.shopify_attributes }}>
-      {% if feed == blank %}
-        Select a feed in this block's settings.
+      {% if feed_page == blank %}
+        Feeds can only be added to the home, product and collection pages.
+      {% elsif wrong_page_feed %}
+        {{ wrong_page_feed.label.value }} is a
+        {{ wrong_page_feed.page.value | replace: '_', ' ' | downcase }} feed and
+        can't be used on this page. Use a feed created for this page in the app.
+      {% elsif feed == blank %}
+        {% if feed_entries.size > 0 %}
+          {%- liquid
+            assign page_labels = ''
+            for candidate in feed_entries
+              if candidate.page.value == feed_page
+                assign page_labels = page_labels | append: candidate.label.value | append: ', '
+              endif
+            endfor
+            assign page_labels = page_labels | remove_last: ', '
+          -%}
+          No feed called "{{ feed_label }}" for this page. Check the label in
+          the app.
+          {% if page_labels != blank %}(Feeds for this page: {{ page_labels }}){% endif %}
+        {% else %}
+          No feeds available to this block. The app's feeds aren't readable
+          here yet (check the feed metaobject type and its storefront access).
+        {% endif %}
       {% else %}
         The selected feed has no posts yet.
       {% endif %}
@@ -112,11 +178,11 @@
   "target": "section",
   "settings": [
     {
-      "type": "metaobject",
+      "type": "text",
       "id": "feed",
-      "label": "Feed",
-      "metaobject_type": "app--393150267393--feed",
-      "info": "Feeds are created and edited in the app."
+      "label": "Feed label",
+      "placeholder": "Auto: this page's first feed",
+      "info": "Leave empty to show this page's first carousel feed (CAROUSEL_HP_01 on the home page, CAROUSEL_PP_01 on product pages, CAROUSEL_CP_01 on collection pages). Or paste any feed label from the app."
     }
   ]
 }

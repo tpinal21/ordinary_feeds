@@ -6,11 +6,14 @@ import {
   AccordionTrigger,
 } from "app/components/ui/accordion";
 import { useFetch } from "app/hooks/useFetch";
+import { themeEditorUrl, useThemeBlocks } from "app/hooks/useThemeBlocks";
 import { apiFetch } from "app/lib/api-client";
+import { FEEDS_KEY } from "app/lib/feeds";
 import { parseAsString, useQueryState } from "nuqs";
-import { useEffect } from "react";
-
-const BLOCK_HANDLE = "carousel";
+import { useEffect, useRef } from "react";
+import { ThemeBlockNotices } from "./theme-block-notices";
+import SettingCard from "./settings-card";
+import { useOutletContext } from "react-router";
 
 export default function AppSetup({
   shop,
@@ -19,50 +22,48 @@ export default function AppSetup({
   themeExtensionEnabled,
   onSetupComplete,
 }) {
-  const [step, setStep] = useQueryState(
-    "step",
-    parseAsString.withDefault("connect-account"),
-  );
-  const themeEditorUrl = `https://${shop}/admin/themes/current/editor?template=index&addAppBlockId=${apiKey}/${BLOCK_HANDLE}&target=newAppsSection`;
+  const { shopDetails } = useOutletContext();
+
+  // No default: an explicit `?step=` (e.g. the post-connect redirect to
+  // create-feed) always wins; otherwise the first unfinished step opens.
+  const [stepParam, setStep] = useQueryState("step", parseAsString);
+
+  // Same SWR entry the home page uses, seeded from the root loader. Creating a
+  // feed calls `mutate(FEEDS_KEY)`, so new feeds show up here without a reload.
+  const { data: feedsData } = useFetch(FEEDS_KEY, ({ key }) => apiFetch(key), {
+    fallbackData: { success: true, data: shopDetails?.feeds },
+    revalidateOnMount: false,
+  });
+  const feeds = feedsData?.data ?? [];
 
   const {
     data: themeCheck,
-    mutate: checkThemeExtension,
-    isLoading: isLoadingThemeExtension,
-    isValidating: isValidatingThemeExtension,
-  } = useFetch(
-    instagramAccount ? "check-theme-extension" : null,
-    () => apiFetch("/api/check-theme-extension", { method: "POST" }),
-    {
-      onSuccess: (data) => {
-        if (data?.success) onSetupComplete();
-
-        if (!themeExtensionEnabled && data?.success) {
-          shopify.toast.show("Theme extension enabled successfully!");
-        }
-      },
-    },
-  );
+    feedStatus,
+    isChecking: isCheckingThemeExtension,
+  } = useThemeBlocks({ enabled: !!instagramAccount });
   const isThemeBlockAdded = themeCheck?.success ?? themeExtensionEnabled;
-  const isCheckingThemeExtension =
-    isLoadingThemeExtension || isValidatingThemeExtension;
+  const addedCount = feeds.filter((feed) => feedStatus(feed).added).length;
 
+  // Setup is done once every feed is actually placed in the theme — a block
+  // alone (maybe with no feed picked) isn't enough. Fires once per visit, so
+  // focus re-checks can't bounce the merchant around.
+  const allFeedsPlaced = feeds.length > 0 && addedCount === feeds.length;
+  // Step 3's tick: every feed placed, or (before any feed exists) any block.
+  const isThemeStepDone = feeds.length ? allFeedsPlaced : isThemeBlockAdded;
+  const completedRef = useRef(false);
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") checkThemeExtension();
-    };
+    if (!allFeedsPlaced || completedRef.current) return;
+    completedRef.current = true;
+    shopify.toast.show("Your feeds are live in your theme!");
+    onSetupComplete();
+  }, [allFeedsPlaced, onSetupComplete]);
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [checkThemeExtension]);
-
-  useEffect(() => {
-    if (instagramAccount?.username && !isThemeBlockAdded) {
-      setStep("enable-extension");
-    }
-  }, [isThemeBlockAdded]);
+  const suggestedStep = !instagramAccount?.username
+    ? "connect-account"
+    : !feeds.length
+      ? "create-feed"
+      : "enable-extension";
+  const step = stepParam || suggestedStep;
 
   return (
     <s-page>
@@ -112,7 +113,26 @@ export default function AppSetup({
               </AccordionContent>
             </AccordionItem>
 
-            {/* <SettingsSection /> */}
+            <AccordionItem
+              value="create-feed"
+              className="data-open:pb-3"
+              onOpenChange={() =>
+                step != "create-feed" && setStep("create-feed")
+              }
+              disabled={!instagramAccount?.username}
+            >
+              <AccordionTrigger className="py-3.5 px-3 items-center gap-2 font-semibold justify-start">
+                {feeds.length ? (
+                  <s-icon type="check-circle" tone="success" />
+                ) : (
+                  <s-icon type="circle-dashed" tone="neutral" />
+                )}
+                Create shoppable widget{" "}
+              </AccordionTrigger>
+              <AccordionContent className="bg-[#f7f7f7] mx-3 p-4 flex gap-4 flex-col rounded-lg">
+                <SettingCard feeds={feeds} usedInSetup />
+              </AccordionContent>
+            </AccordionItem>
 
             <AccordionItem
               value="enable-extension"
@@ -123,31 +143,87 @@ export default function AppSetup({
               disabled={!instagramAccount?.username}
             >
               <AccordionTrigger className="py-3.5 px-3 items-center gap-2 font-semibold justify-start">
-                {isThemeBlockAdded ? (
+                {isThemeStepDone ? (
                   <s-icon type="check-circle" tone="success" />
                 ) : (
                   <s-icon type="circle-dashed" tone="neutral" />
                 )}
-                Add feed to your theme{" "}
-                {isThemeBlockAdded ? (
+                Add widget to your theme{" "}
+                {isThemeStepDone ? (
                   <s-badge tone="success">Complete</s-badge>
                 ) : (
                   <s-badge tone="warning">Incomplete</s-badge>
                 )}
+                {!!feeds.length && (
+                  <s-badge tone="neutral">
+                    {addedCount}/{feeds.length} feeds added
+                  </s-badge>
+                )}
               </AccordionTrigger>
               <AccordionContent className="bg-[#f7f7f7] mx-3 p-4 flex gap-4 flex-col rounded-lg">
-                {isThemeBlockAdded
-                  ? "You have successfully enabled the theme extension!"
-                  : "Add the feed to your theme to display it on your store."}
-                {!isThemeBlockAdded && (
-                  <s-button
-                    variant="primary"
-                    href={themeEditorUrl}
-                    target="_blank"
-                    loading={isCheckingThemeExtension}
-                  >
-                    Add to theme
-                  </s-button>
+                {feeds.length ? (
+                  <>
+                    <s-paragraph>
+                      Add a block to your theme. It shows the page&apos;s first
+                      feed automatically; to show a different one, paste its
+                      label into the block&apos;s Feed label setting.
+                    </s-paragraph>
+                    <ThemeBlockNotices />
+                    <s-stack gap="small-200">
+                      {feeds.map((feed) => {
+                        const { added } = feedStatus(feed);
+                        return (
+                          <div
+                            key={feed.id}
+                            className="flex items-center justify-between gap-2 rounded-md bg-white px-3 py-2 border border-[#e3e3e3]"
+                          >
+                            <div className="inline-flex items-center gap-2">
+                              <s-text type="strong">{feed.label}</s-text>
+                              {added ? (
+                                <s-badge tone="success" icon="check">
+                                  Added
+                                </s-badge>
+                              ) : (
+                                <s-badge tone="warning">Not added</s-badge>
+                              )}
+                            </div>
+                            {!added && (
+                              <s-button
+                                variant="secondary"
+                                icon="app-extension"
+                                href={themeEditorUrl({
+                                  shop,
+                                  apiKey,
+                                  page: feed.page,
+                                  type: feed.type,
+                                })}
+                                target="_blank"
+                                loading={isCheckingThemeExtension}
+                              >
+                                Add to theme
+                              </s-button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </s-stack>
+                  </>
+                ) : (
+                  <>
+                    {isThemeBlockAdded
+                      ? "You have successfully enabled the theme extension!"
+                      : "Add the feed to your theme to display it on your store."}
+                    {!isThemeBlockAdded && (
+                      <s-button
+                        variant="primary"
+                        href={themeEditorUrl({ shop, apiKey })}
+                        target="_blank"
+                        loading={isCheckingThemeExtension}
+                      >
+                        Add to theme
+                      </s-button>
+                    )}
+                  </>
                 )}
               </AccordionContent>
             </AccordionItem>

@@ -6,6 +6,18 @@ export const GALLERIES_KEY = "/api/galleries";
 
 export const FEED_TYPES = ["CAROUSEL", "GRID", "POPUP"];
 
+// Theme app extension block that renders each feed type — the file name under
+// `extensions/feed-section/blocks/`. Adding a type here is all the theme check
+// and the "Add to theme" links need; the block itself still has to exist.
+export const FEED_BLOCKS = {
+  CAROUSEL: "carousel",
+  GRID: "grid",
+  POPUP: "popup",
+};
+
+export const feedBlockHandle = (type) =>
+  FEED_BLOCKS[type] ?? FEED_BLOCKS.CAROUSEL;
+
 // Ranges the feed editor and the app-wide feed defaults both offer.
 export const GRID_COLUMNS = [2, 3, 4, 5, 6];
 export const GRID_ROWS = [1, 2, 3, 4, 5, 6];

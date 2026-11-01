@@ -2,6 +2,7 @@ import { AccountInformationCard } from "app/components/app-blocks/account-inform
 import { ThemeBlocksCard } from "app/components/app-blocks/theme-blocks-card";
 import SettingCard from "app/components/settings-card";
 import { useFetch } from "app/hooks/useFetch";
+import { useThemeBlocks } from "app/hooks/useThemeBlocks";
 import { delay, enter } from "app/lib/animations";
 import { apiFetch } from "app/lib/api-client";
 import { FEEDS_KEY } from "app/lib/feeds";
@@ -9,6 +10,7 @@ import { Navigate, useOutletContext } from "react-router";
 
 export default function Index() {
   const { shopDetails } = useOutletContext();
+  const { storefrontEnabled } = useThemeBlocks();
 
   const instagramAccount = shopDetails?.instagram_account.find(
     (acc) => acc.status == "CONNECTED",
@@ -38,6 +40,9 @@ export default function Index() {
           Set up your Instagram feeds in minutes
         </s-text>
       </div>
+      {!storefrontEnabled && !!feedsData?.data?.length && (
+        <StorefrontDisabledBanner />
+      )}
       <s-query-container>
         <s-grid
           gridTemplateColumns="@container (inline-size > 640px) 1fr 1fr 1fr 1fr, 1fr 1fr"
@@ -88,3 +93,20 @@ export default function Index() {
     </s-page>
   );
 }
+
+// The Settings page can hide every feed at once; without this the merchant
+// sees "Added" on each card and wonders why nothing shows on the store.
+const StorefrontDisabledBanner = () => (
+  <div className="mb-3">
+    <s-banner tone="warning" heading="Feeds are hidden from your storefront">
+      <s-paragraph>
+        &quot;Show feeds on your storefront&quot; is turned off in Settings, so
+        customers won&apos;t see any feed, even where its block is added to your
+        theme.
+      </s-paragraph>
+      <s-button slot="secondary-actions" href="/settings">
+        Go to settings
+      </s-button>
+    </s-banner>
+  </div>
+);
