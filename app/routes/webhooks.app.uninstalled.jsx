@@ -1,7 +1,7 @@
 import { updateItem } from "@directus/sdk";
 import directus from "../directus.server";
-import { authenticate } from "../shopify.server";
-import { SHOPS, IG_ACCOUNTS } from "app/lib/constants";
+import { authenticate, sessionStorage } from "../shopify.server";
+import { SHOPS } from "app/lib/constants";
 
 export const action = async ({ request }) => {
   const { shop, session, ...topic } = await authenticate.webhook(request);
@@ -17,6 +17,13 @@ export const action = async ({ request }) => {
   } catch (err) {
     console.error("[directus] failed to mark shop uninstalled", err);
   }
+
+  // Remove the session rows (unlinked above) and evict them from the cache.
+  // Look up by shop: on webhook retries `session` may already be undefined.
+  const sessions = await sessionStorage.findSessionsByShop(shop);
+  const ids = sessions.map((s) => s.id);
+  if (session?.id && !ids.includes(session.id)) ids.push(session.id);
+  await sessionStorage.deleteSessions(ids);
 
   return new Response();
 };
