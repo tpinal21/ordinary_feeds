@@ -19,8 +19,7 @@ export default function MediaGalleryList() {
 
   const { trigger: deleteGallery, isMutating: isDeleting } = useMutation(
     "delete-gallery",
-    ({ arg }) =>
-      apiFetch("/api/galleries", { method: "DELETE", body: { id: arg } }),
+    ({ arg }) => apiFetch(`/api/galleries/${arg}`, { method: "DELETE" }),
     {
       onSuccess: (res) => {
         shopify.toast.show(
@@ -51,70 +50,81 @@ export default function MediaGalleryList() {
       >
         Create gallery
       </s-button>
-      <s-paragraph color="subdued" className={enter} style={delay(75)}>
-        Organize your synced Instagram posts into galleries, then display them
-        anywhere in your store.
-      </s-paragraph>
-      <div className={enter} style={delay(150)}>
-        <s-table loading={isLoading}>
-          <s-grid slot="filters">
-            <div className="-mx-2">
-              <s-text-field
-                label="Search galleries"
-                labelAccessibilityVisibility="exclusive"
-                icon="search"
-                placeholder="Searching all galleries"
-              />
-            </div>
-          </s-grid>
-          <s-table-header-row>
-            <s-table-header listSlot="primary">Title</s-table-header>
-            <s-table-header listSlot="secondary">Type</s-table-header>
-            <s-table-header format="numeric">Media count</s-table-header>
-            <s-table-header>
-              <span className="text-center inline-block w-full">Actions</span>
-            </s-table-header>
-          </s-table-header-row>
-          <s-table-body>
-            {galleries.map((gallery) => (
-              <s-table-row key={gallery?.id}>
-                <s-table-cell>
-                  {gallery.title}
-                  <s-link
-                    id={`gallery-${gallery?.id}-title`}
-                    href={`/media-gallery/${gallery?.id}`}
-                    tone="neutral"
-                  ></s-link>
-                </s-table-cell>
-                <s-table-cell>
-                  <s-badge>{gallery.type}</s-badge>
-                </s-table-cell>
-                <s-table-cell>
-                  <s-text fontVariantNumeric="tabular-nums">
-                    {gallery?.media?.length}
-                  </s-text>
-                </s-table-cell>
-                <s-table-cell>
-                  <div className="flex gap-1 justify-center">
-                    <s-button
-                      icon="edit"
-                      variant="tertiary"
-                      href={`/media-gallery/${gallery?.id}`}
-                    ></s-button>
-                    <s-button
-                      icon="delete"
-                      variant="tertiary"
-                      tone="critical"
-                      accessibilitylabel={`Delete ${gallery.title}`}
-                      onClick={() => setGalleryToDelete(gallery)}
-                    ></s-button>
-                  </div>
-                </s-table-cell>
-              </s-table-row>
-            ))}
-          </s-table-body>
-        </s-table>
-      </div>
+
+      {isLoading ? (
+        <div className="flex py-2 justify-center">
+          <s-spinner />
+        </div>
+      ) : (
+        <>
+          <s-paragraph color="subdued" className={enter} style={delay(75)}>
+            Organize your synced Instagram posts into galleries, then display
+            them anywhere in your store.
+          </s-paragraph>
+          <div className={enter} style={delay(150)}>
+            <s-table loading={isLoading}>
+              <s-grid slot="filters">
+                <div className="-mx-2">
+                  <s-text-field
+                    label="Search galleries"
+                    labelAccessibilityVisibility="exclusive"
+                    icon="search"
+                    placeholder="Searching all galleries"
+                  />
+                </div>
+              </s-grid>
+              <s-table-header-row>
+                <s-table-header listSlot="primary">Title</s-table-header>
+                <s-table-header listSlot="secondary">Type</s-table-header>
+                <s-table-header format="numeric">Media count</s-table-header>
+                <s-table-header>
+                  <span className="text-center inline-block w-full">
+                    Actions
+                  </span>
+                </s-table-header>
+              </s-table-header-row>
+              <s-table-body>
+                {galleries.map((gallery) => (
+                  <s-table-row key={gallery?.id}>
+                    <s-table-cell>
+                      {gallery.title}
+                      <s-link
+                        id={`gallery-${gallery?.id}-title`}
+                        href={`/media-gallery/${gallery?.id}`}
+                        tone="neutral"
+                      ></s-link>
+                    </s-table-cell>
+                    <s-table-cell>
+                      <s-badge>{gallery.type}</s-badge>
+                    </s-table-cell>
+                    <s-table-cell>
+                      <s-text fontVariantNumeric="tabular-nums">
+                        {gallery?.media?.length}
+                      </s-text>
+                    </s-table-cell>
+                    <s-table-cell>
+                      <div className="flex gap-1 justify-center">
+                        <s-button
+                          icon="edit"
+                          variant="tertiary"
+                          href={`/media-gallery/${gallery?.id}`}
+                        ></s-button>
+                        <s-button
+                          icon="delete"
+                          variant="tertiary"
+                          tone="critical"
+                          accessibilitylabel={`Delete ${gallery.title}`}
+                          onClick={() => setGalleryToDelete(gallery)}
+                        ></s-button>
+                      </div>
+                    </s-table-cell>
+                  </s-table-row>
+                ))}
+              </s-table-body>
+            </s-table>
+          </div>
+        </>
+      )}
 
       {galleryToDelete && (
         <Modal

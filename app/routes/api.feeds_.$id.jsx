@@ -1,21 +1,14 @@
 import { readItem, updateItem } from "@directus/sdk";
 import directus from "app/directus.server";
 import { FEEDS, SHOPS } from "app/lib/constants";
+import { readJsonBody } from "app/lib/http.server";
 import { authenticate } from "../shopify.server";
 
 export async function action({ request, params }) {
   const { session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
-  let payload;
-  try {
-    payload = await request.json();
-  } catch {
-    return Response.json(
-      { success: false, error: "invalid_json" },
-      { status: 400 },
-    );
-  }
+  const payload = await readJsonBody(request);
 
   const { gallery, settings } = payload;
 

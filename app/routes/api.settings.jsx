@@ -1,19 +1,12 @@
 import { appSettings } from "app/lib/app-settings";
 import { saveAppSettings } from "app/lib/app-settings.server";
+import { badRequest, readJsonBody } from "app/lib/http.server";
 import { authenticate } from "../shopify.server";
-
-const badRequest = (error) =>
-  Response.json({ success: false, error }, { status: 400 });
 
 export async function action({ request }) {
   const { admin } = await authenticate.admin(request);
 
-  let payload;
-  try {
-    payload = await request.json();
-  } catch {
-    return badRequest("invalid_json");
-  }
+  const payload = await readJsonBody(request);
 
   // Check after normalizing: unknown types are dropped, so a list of only
   // unknown ones ends up just as empty as an unticked one.

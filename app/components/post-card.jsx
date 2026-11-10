@@ -1,3 +1,7 @@
+import { VolumeIcon } from "app/components/icons/volume-icon";
+import { VolumeOffIcon } from "app/components/icons/volume-off-icon";
+import { pickProductTag } from "app/lib/product-tag";
+import { cn } from "app/lib/utils";
 import {
   useEffect,
   useId,
@@ -5,10 +9,6 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { VolumeIcon } from "app/components/icons/volume-icon";
-import { VolumeOffIcon } from "app/components/icons/volume-off-icon";
-import { PlusIcon } from "lucide-react";
-import { cn } from "app/lib/utils";
 
 const posterSrc = (post) => post?.thumbnail_url ?? post?.media_url;
 
@@ -135,15 +135,60 @@ export default function PostCard({
   };
 
   const handlePickProducts = async () => {
-    const picker = await shopify.resourcePicker({
-      type: "product",
-      filter: {
-        variants: false,
-      },
-      multiple: false,
-    });
-    onTagProduct(picker[0]);
+    const tag = await pickProductTag();
+    if (tag) onTagProduct(tag);
   };
+
+  // Instagram omits `media_url` for posts that contain copyrighted content
+  // (e.g. licensed music), so there is nothing we can play or embed. Show the
+  // reason instead and keep the card out of selection / product tagging.
+  if (!post?.media_url) {
+    return (
+      <div
+        aria-disabled="true"
+        className={cn(
+          "group/post-card relative overflow-hidden rounded-md border border-dashed border-neutral-400 bg-neutral-200 cursor-not-allowed select-none",
+          className,
+        )}
+      >
+        {showDeleteButton && (
+          <>
+            <s-tooltip id="info-tooltip">Remove media from gallery</s-tooltip>
+            <button
+              interestfor="info-tooltip"
+              type="button"
+              onClick={onDelete}
+              className="absolute z-10 right-1 top-1 p-0.5 cursor-pointer invisible bg-neutral-100 transition-all group-hover/post-card:visible shadow-card rounded-md"
+            >
+              <s-icon type="delete" tone="critical" />
+            </button>
+          </>
+        )}
+        <div
+          style={{ aspectRatio: "var(--insta-aspect, 9 / 16)" }}
+          className="relative w-full"
+        >
+          {post?.thumbnail_url && (
+            <img
+              src={post.thumbnail_url}
+              alt=""
+              className="absolute inset-0 size-full object-cover grayscale blur-[2px] opacity-40"
+            />
+          )}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-3 text-center">
+            <s-icon type="alert-triangle" tone="caution" />
+            <span className="text-xs font-semibold text-neutral-800">
+              Media unavailable
+            </span>
+            <span className="text-[11px] leading-snug text-neutral-600">
+              This post contains copyrighted content, so Instagram doesn&apos;t
+              allow it to be displayed. It can&apos;t be selected.
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -159,7 +204,12 @@ export default function PostCard({
       onClick={togglePlay}
     >
       {!hideCheckbox && !showDeleteButton && (
-        <div className="absolute z-10 left-1.5 top-1.5 size-4">
+        <div
+          role="presentation"
+          className="absolute z-10 left-1.5 top-1.5 size-4"
+          // Ticking the box shouldn't also play/pause the video underneath.
+          onClick={(e) => e.stopPropagation()}
+        >
           <s-checkbox
             checked={selected}
             disabled={checkBoxDisabled}

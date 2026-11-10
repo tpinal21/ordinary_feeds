@@ -71,6 +71,10 @@ type = "url"
 name = "Caption"
 type = "multi_line_text_field"
 
+[metaobjects.app.post.fields.products]
+name = "Tagged products"
+type = "list.product_reference"
+
 [metaobjects.app.gallery]
 name = "Gallery"
 display_name_field = "title"

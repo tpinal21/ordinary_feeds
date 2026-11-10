@@ -38,7 +38,8 @@ export default function MediaGallery() {
 
   const { data: instagramPostsData, trigger: updateGallery } = useMutation(
     "update-gallery",
-    ({ arg }) => apiFetch("/api/galleries", { method: "POST", body: arg }),
+    ({ arg: { id, ...body } }) =>
+      apiFetch(`/api/galleries/${id}`, { method: "PATCH", body }),
     {
       onSuccess: (data) => {
         reset(formValues, { keepDirty: false });

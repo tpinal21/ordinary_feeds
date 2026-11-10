@@ -35,9 +35,21 @@ const TABS = [
 ];
 
 const FEED_STYLES = {
-  CAROUSEL: { label: "CAROUSEL", icon: "slideshow" },
-  GRID: { label: "GRID", icon: "grid" },
-  POPUP: { label: "POPUP", icon: "layout-popup" },
+  CAROUSEL: {
+    label: "Carousel",
+    icon: "slideshow",
+    description: "A scrolling row of posts",
+  },
+  GRID: {
+    label: "Grid",
+    icon: "grid",
+    description: "Posts laid out in rows and columns",
+  },
+  POPUP: {
+    label: "Popup",
+    icon: "layout-popup",
+    description: "Posts shown in a popup over the page",
+  },
 };
 
 export default function SettingCard({ feeds, usedInSetup = false }) {
@@ -160,28 +172,35 @@ const AddFeedButton = ({ page }) => {
         Add feed
       </s-button>
       <s-popover id="add-feed-popover" accessibilitylabel="Add a feed">
-        <div className="p-0.5 flex flex-col gap-0.5">
-          {Object.entries(FEED_STYLES).map(([type, { label, icon }]) => {
-            const appWindowId = feedCreateWindowId(type, page);
-            return (
-              <Fragment key={appWindowId}>
-                <button
-                  type="button"
-                  className="inline-flex gap-0.5 px-1.5 cursor-pointer rounded-md hover:bg-neutral-100 py-0.5"
-                  accessibilitylabel="Create feed"
-                  commandfor={appWindowId}
-                  command="--show"
-                >
-                  <s-icon type={icon} />
-                  <span>{label}</span>
-                </button>
-                <s-app-window
-                  id={appWindowId}
-                  src={`/feeds/create?type=${type}&page=${page}`}
-                ></s-app-window>
-              </Fragment>
-            );
-          })}
+        <div className="p-1.5 flex flex-col gap-0.5">
+          {Object.entries(FEED_STYLES).map(
+            ([type, { label, icon, description }]) => {
+              const appWindowId = feedCreateWindowId(type, page);
+              return (
+                <Fragment key={appWindowId}>
+                  <button
+                    type="button"
+                    className="inline-flex items-start gap-0.5 px-1.5 cursor-pointer rounded-md hover:bg-neutral-100 py-0.5 text-left"
+                    accessibilitylabel="Create feed"
+                    commandfor={appWindowId}
+                    command="--show"
+                  >
+                    <s-icon type={icon} />
+                    <span className="flex flex-col">
+                      <span>{label}</span>
+                      <span className="text-xs text-neutral-500">
+                        {description}
+                      </span>
+                    </span>
+                  </button>
+                  <s-app-window
+                    id={appWindowId}
+                    src={`/feeds/create?type=${type}&page=${page}`}
+                  ></s-app-window>
+                </Fragment>
+              );
+            },
+          )}
         </div>
       </s-popover>
     </>

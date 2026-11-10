@@ -78,6 +78,8 @@ export const MediaListModal = ({
                     !!selected.find((_) => _.media_id == media.media_id)
                   }
                   onSelect={(_selected) => {
+                    // Copyrighted posts come without a media_url and can't be shown.
+                    if (!media.media_url) return;
                     if (_selected) {
                       setSelected((prev) => [...prev, media]);
                     } else {

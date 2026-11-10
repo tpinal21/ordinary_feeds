@@ -21,6 +21,7 @@ export default function AppSetup({
   instagramAccount,
   themeExtensionEnabled,
   onSetupComplete,
+  notice,
 }) {
   const { shopDetails } = useOutletContext();
 
@@ -44,19 +45,16 @@ export default function AppSetup({
   const isThemeBlockAdded = themeCheck?.success ?? themeExtensionEnabled;
   const addedCount = feeds.filter((feed) => feedStatus(feed).added).length;
 
-  // Setup is done once every feed is actually placed in the theme — a block
-  // alone (maybe with no feed picked) isn't enough. Fires once per visit, so
-  // focus re-checks can't bounce the merchant around.
-  const allFeedsPlaced = feeds.length > 0 && addedCount === feeds.length;
-  // Step 3's tick: every feed placed, or (before any feed exists) any block.
-  const isThemeStepDone = feeds.length ? allFeedsPlaced : isThemeBlockAdded;
+  const isAccountStepDone = !!instagramAccount?.username;
+  const isFeedStepDone = isAccountStepDone && feeds.length > 0;
+  const isThemeStepDone = isFeedStepDone && addedCount > 0;
   const completedRef = useRef(false);
   useEffect(() => {
-    if (!allFeedsPlaced || completedRef.current) return;
+    if (!isThemeStepDone || completedRef.current) return;
     completedRef.current = true;
     shopify.toast.show("Your feeds are live in your theme!");
     onSetupComplete();
-  }, [allFeedsPlaced, onSetupComplete]);
+  }, [isThemeStepDone, onSetupComplete]);
 
   const suggestedStep = !instagramAccount?.username
     ? "connect-account"
@@ -71,6 +69,7 @@ export default function AppSetup({
       <p className="text-sm text-neutral-500 mb-4">
         Set up your Instagram feeds in minutes
       </p>
+      {notice && <div className="mb-4">{notice}</div>}
       <s-section>
         <s-stack gap="small-200">
           <s-stack gap="small-300">
@@ -93,7 +92,7 @@ export default function AppSetup({
               }
             >
               <AccordionTrigger className="py-3.5 px-3 items-center gap-2 font-semibold justify-start">
-                {instagramAccount?.username ? (
+                {isAccountStepDone ? (
                   <s-icon type="check-circle" tone="success" />
                 ) : (
                   <s-icon type="circle-dashed" tone="subdued" />
@@ -122,7 +121,7 @@ export default function AppSetup({
               disabled={!instagramAccount?.username}
             >
               <AccordionTrigger className="py-3.5 px-3 items-center gap-2 font-semibold justify-start">
-                {feeds.length ? (
+                {isFeedStepDone ? (
                   <s-icon type="check-circle" tone="success" />
                 ) : (
                   <s-icon type="circle-dashed" tone="neutral" />

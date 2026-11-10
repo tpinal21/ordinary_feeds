@@ -3,6 +3,7 @@ import directus from "app/directus.server";
 import { FEEDS } from "app/lib/constants";
 import { FEED_PAGE_CODES, FEED_PAGES, FEED_TYPES } from "app/lib/feeds";
 import { getShopFeeds } from "app/lib/shops.server";
+import { badRequest, readJsonBody } from "app/lib/http.server";
 import { authenticate } from "../shopify.server";
 
 // Labels read as `CAROUSEL_HP_01` and have to be unique per shop, so they're
@@ -32,9 +33,6 @@ async function nextFeedLabel(shopDomain, type, pageCode) {
   return `${prefix}${String(seq + 1).padStart(LABEL_PAD, "0")}`;
 }
 
-const badRequest = (error) =>
-  Response.json({ success: false, error }, { status: 400 });
-
 export async function loader({ request }) {
   const { session } = await authenticate.admin(request);
   const shopDomain = session.shop;
@@ -54,12 +52,7 @@ export async function action({ request }) {
   const { session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
-  let payload;
-  try {
-    payload = await request.json();
-  } catch {
-    return badRequest("invalid_json");
-  }
+  const payload = await readJsonBody(request);
 
   const { type, page, gallery, settings } = payload;
 

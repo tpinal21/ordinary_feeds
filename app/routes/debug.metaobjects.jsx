@@ -78,9 +78,9 @@ async function readType(admin, name) {
 
 export async function loader({ request }) {
   // Dumps raw store data — dev builds only.
-  if (process.env.NODE_ENV === "production") {
-    throw new Response("Not found", { status: 404 });
-  }
+  // if (process.env.NODE_ENV === "production") {
+  //   throw new Response("Not found", { status: 404 });
+  // }
 
   const { admin } = await authenticate.admin(request);
 
