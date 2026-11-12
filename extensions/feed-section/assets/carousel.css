@@ -20,20 +20,32 @@
   /* Fill the section the block sits in. Inline-size containment reports 0
      intrinsic width, so instead of sizing from content (or the viewport, which
      overflows inside a section's flex/grid layout) the block claims its
-     parent's full width in every layout a theme might use:
-       - block / grid:      width: 100%
-       - row flex:          flex: 1 1 100%
-       - column flex with
-         align-items start: align-self: stretch
-     min-width: 0 lets a flex or grid track shrink below the slides' width. */
+     parent's full width. See the wrapper rule below for why that's needed. */
   display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  flex: 1 1 100%;
   align-self: stretch;
   justify-self: stretch;
   padding: 1rem 0;
+}
+
+/* Shopify wraps every app block in <div class="shopify-app-block">, and that
+   wrapper is what the section lays out. In a column flex section with
+   `align-items: flex-start` (Horizon-style themes) it shrinks to its
+   content, and the carousel's content width is 0 — so the whole block
+   collapsed to nothing. Make the wrapper fill the section in every layout:
+     - block / row flex:            width: 100%
+     - column flex, align start:    align-self: stretch
+     - grid:                        justify-self: stretch
+   `flex` is deliberately left alone: in a column it would set the height. */
+.shopify-app-block:has(> [data-insta-carousel]) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  justify-self: stretch;
 }
 
 .insta-carousel__heading {
