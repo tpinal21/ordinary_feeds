@@ -16,12 +16,23 @@
 
   container-type: inline-size;
   position: relative;
-  /* Inline-size containment makes this element report 0 intrinsic width, so a
-     theme wrapper that shrink-wraps its blocks collapses it to nothing.
-     Claiming the full viewport, capped at the parent's width, gives the wrapper
-     something to grow to while still filling it exactly. */
-  width: 100vw;
+  box-sizing: border-box;
+  /* Fill the section the block sits in. Inline-size containment reports 0
+     intrinsic width, so instead of sizing from content (or the viewport, which
+     overflows inside a section's flex/grid layout) the block claims its
+     parent's full width in every layout a theme might use:
+       - block / grid:      width: 100%
+       - row flex:          flex: 1 1 100%
+       - column flex with
+         align-items start: align-self: stretch
+     min-width: 0 lets a flex or grid track shrink below the slides' width. */
+  display: block;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+  flex: 1 1 100%;
+  align-self: stretch;
+  justify-self: stretch;
   padding: 1rem 0;
 }
 

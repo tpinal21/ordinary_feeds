@@ -1,13 +1,19 @@
 import { FeedPreview } from "app/components/feed-preview";
 import { APP_WINDOW_CHANNEL } from "app/lib/app-window";
-import { useThemeBlocks } from "app/hooks/useThemeBlocks";
+import {
+  THEME_BLOCKS_KEY,
+  templateLabel,
+  useThemeBlocks,
+} from "app/hooks/useThemeBlocks";
+import { apiFetch } from "app/lib/api-client";
 import { FEEDS_KEY } from "app/lib/feeds";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router";
 import { mutate } from "swr";
 
-export const FeedCard = ({ feed, onRemove }) => {
+export const FeedCard = ({ feed }) => {
   const appWindowId = `/feeds/${feed.id}`;
+  const deleteModalId = `delete-feed-${feed.id}`;
   const { shopDetails, apiKey } = useOutletContext();
   const {
     feedStatus,
@@ -16,7 +22,7 @@ export const FeedCard = ({ feed, onRemove }) => {
     checkFailed,
     storefrontEnabled,
   } = useThemeBlocks();
-  const { added, wrongBlocks } = feedStatus(feed);
+  const { added, wrongBlocks, templates = [] } = feedStatus(feed);
 
   useEffect(() => {
     const channel = new BroadcastChannel(APP_WINDOW_CHANNEL);
@@ -76,7 +82,8 @@ export const FeedCard = ({ feed, onRemove }) => {
             icon="delete"
             variant="secondary"
             tone="critical"
-            onClick={onRemove}
+            commandfor={deleteModalId}
+            command="--show"
             accessibilitylabel={`Remove ${feed.label} feed`}
           />
         </div>
@@ -136,6 +143,78 @@ export const FeedCard = ({ feed, onRemove }) => {
         />
       </div>
       <s-app-window id={appWindowId} src={appWindowId}></s-app-window>
+      <DeleteFeedModal
+        id={deleteModalId}
+        feed={feed}
+        added={!isLoading && !checkFailed && added}
+        unknown={isLoading || checkFailed}
+        templates={templates}
+      />
     </s-box>
+  );
+};
+
+// "Delete <label>?" — the message depends on whether the feed is placed in
+// the live theme, since deleting a placed feed blanks that block.
+const DeleteFeedModal = ({ id, feed, added, unknown, templates }) => {
+  const [deleting, setDeleting] = useState(false);
+
+  const pages = templates.map(templateLabel).join(", ");
+
+  const onDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await apiFetch(`/api/feeds/${feed.id}`, { method: "DELETE" });
+      if (!res?.success) throw new Error(res?.error ?? "delete_failed");
+
+      document.getElementById(id)?.hideOverlay?.();
+      shopify.toast.show(`${feed.label} deleted`);
+      mutate(FEEDS_KEY);
+      mutate(THEME_BLOCKS_KEY);
+    } catch {
+      shopify.toast.show("Couldn't delete the feed", { isError: true });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <s-modal id={id} heading={`Delete ${feed.label}?`}>
+      <s-stack direction="block" gap="base">
+        {added ? (
+          <s-banner tone="warning">
+            This feed is live in your theme
+            {pages ? ` on the ${pages}` : ""}. Once it&apos;s deleted, that
+            theme block shows nothing until you remove it or give it another
+            feed.
+          </s-banner>
+        ) : unknown ? (
+          <s-paragraph>
+            We couldn&apos;t check your theme. If this feed is in it, its block
+            will show nothing once the feed is deleted.
+          </s-paragraph>
+        ) : (
+          <s-paragraph>
+            This feed isn&apos;t in your theme, so nothing on your store
+            changes.
+          </s-paragraph>
+        )}
+        <s-paragraph>
+          The feed&apos;s gallery and posts are kept. This can&apos;t be undone.
+        </s-paragraph>
+      </s-stack>
+      <s-button
+        slot="primary-action"
+        variant="primary"
+        tone="critical"
+        loading={deleting}
+        onClick={onDelete}
+      >
+        Delete feed
+      </s-button>
+      <s-button slot="secondary-actions" commandfor={id} command="--hide">
+        Cancel
+      </s-button>
+    </s-modal>
   );
 };

@@ -110,9 +110,7 @@ export default function SettingCard({ feeds, usedInSetup = false }) {
               {feedFields.length === 0 ? (
                 <EmptyStateCard page={tab.code} />
               ) : (
-                feedFields.map((feed) => (
-                  <FeedCard key={feed.id} feed={feed} onRemove={() => {}} />
-                ))
+                feedFields.map((feed) => <FeedCard key={feed.id} feed={feed} />)
               )}
             </div>
           </s-section>
@@ -160,14 +158,17 @@ const AddFeedButton = ({ page }) => {
   return (
     <>
       <s-button
-        commandfor="add-feed-popover"
+        commandfor={`add-feed-popover-${page}`}
         accessibilitylabel="Add feed"
         icon="plus"
         variant="primary"
       >
         Add feed
       </s-button>
-      <s-popover id="add-feed-popover" accessibilitylabel="Add a feed">
+      <s-popover
+        id={`add-feed-popover-${page}`}
+        accessibilitylabel="Add a feed"
+      >
         <div className="p-1.5 flex flex-col gap-0.5">
           {Object.entries(FEED_STYLES).map(
             ([type, { label, icon, description }]) => {
