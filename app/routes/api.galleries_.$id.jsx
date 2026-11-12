@@ -4,11 +4,15 @@ import { GALLERIES, IG_MEDIA } from "app/lib/constants";
 import {
   GALLERY_FIELDS,
   galleryNotFound,
+  missingAccount,
+  ownMedia,
   ownsGallery,
+  readShopAccount,
   serverError,
   toGallery,
   toIgMedia,
 } from "app/lib/galleries.server";
+import { syncGalleryMetaobject } from "app/lib/gallery-metaobjects.server";
 import { badRequest, readJsonBody } from "app/lib/http.server";
 import {
   deleteGalleryMetaobject,
@@ -25,7 +29,7 @@ export async function action({ request, params }) {
 
   switch (request.method) {
     case "PATCH":
-      return updateGallery(request, shopDomain, galleryId);
+      return updateGallery(admin, request, shopDomain, galleryId);
     case "DELETE":
       return deleteGallery(admin, shopDomain, galleryId);
     default:
@@ -36,7 +40,7 @@ export async function action({ request, params }) {
   }
 }
 
-async function updateGallery(request, shopDomain, galleryId) {
+async function updateGallery(admin, request, shopDomain, galleryId) {
   const { title, media } = await readJsonBody(request);
 
   if (!title?.trim()) return badRequest("title_required");
@@ -44,14 +48,35 @@ async function updateGallery(request, shopDomain, galleryId) {
   try {
     if (!(await ownsGallery(shopDomain, galleryId))) return galleryNotFound();
 
+    const account = await readShopAccount(shopDomain);
+    if (!account) return missingAccount();
+
     const gallery = await directus.request(
       updateItem(
         GALLERIES,
         galleryId,
-        { title, ig_media: toIgMedia(media) },
+        {
+          title,
+          ig_media: toIgMedia(ownMedia(media, account), account.id),
+        },
         { fields: GALLERY_FIELDS },
       ),
     );
+
+    // Saving again re-runs this, so a failure here is safe to surface.
+    try {
+      await syncGalleryMetaobject(admin, galleryId, shopDomain);
+    } catch (err) {
+      console.error("[gallery] metaobject sync failed", err);
+      return Response.json(
+        {
+          success: false,
+          error: "metaobject_sync_failed",
+          detail: String(err?.message ?? err),
+        },
+        { status: 502 },
+      );
+    }
 
     return { success: true, data: toGallery(gallery) };
   } catch (err) {

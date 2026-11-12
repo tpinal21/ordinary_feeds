@@ -70,11 +70,7 @@ export default function SettingCard({ feeds, usedInSetup = false }) {
       onValueChange={setcurrentTab}
     >
       {/* The setup's own "Add to theme" step shows these there. */}
-      {!usedInSetup && !!feeds?.length && (
-        <div className="flex flex-col gap-2 mb-3">
-          <ThemeBlockNotices />
-        </div>
-      )}
+      {!usedInSetup && !!feeds?.length && <ThemeBlockNotices />}
 
       <TabsList className="w-full p-0 bg-transparent">
         {TABS.map((tab, index) => (

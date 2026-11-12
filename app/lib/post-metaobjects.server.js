@@ -51,13 +51,15 @@ const toFields = (media) => {
 };
 
 // Upserts one `$app:post` metaobject per media item, keyed by its Directus
-// id. Throws if Shopify rejects any of them; every upsert is idempotent, so
+// id, and returns `{ [media id]: metaobject GID }` for the ones written.
+// Throws if Shopify rejects any of them; every upsert is idempotent, so
 // retrying the whole save is safe.
 export async function syncPostMetaobjects(admin, mediaItems) {
   // `media_url` is required on the definition; posts without one (e.g.
   // copyright-blocked videos) can't be rendered on the storefront anyway.
   const items = mediaItems.filter((m) => m.media_url && m.media_type);
   const errors = [];
+  const gids = {};
 
   for (let start = 0; start < items.length; start += CHUNK_SIZE) {
     const chunk = items.slice(start, start + CHUNK_SIZE);
@@ -82,12 +84,16 @@ export async function syncPostMetaobjects(admin, mediaItems) {
       for (const e of data?.[`post${i}`]?.userErrors ?? []) {
         errors.push(`${media.id}: ${e.message}`);
       }
+      const gid = data?.[`post${i}`]?.metaobject?.id;
+      if (gid) gids[media.id] = gid;
     });
   }
 
   if (errors.length) {
     throw new Error(`Post metaobject sync failed: ${errors.join("; ")}`);
   }
+
+  return gids;
 }
 
 const buildLookup = (count) => {

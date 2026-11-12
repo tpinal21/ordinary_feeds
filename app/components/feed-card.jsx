@@ -1,6 +1,6 @@
 import { FeedPreview } from "app/components/feed-preview";
 import { APP_WINDOW_CHANNEL } from "app/lib/app-window";
-import { useThemeBlocks, themeEditorUrl } from "app/hooks/useThemeBlocks";
+import { useThemeBlocks } from "app/hooks/useThemeBlocks";
 import { FEEDS_KEY } from "app/lib/feeds";
 import { useEffect } from "react";
 import { useOutletContext } from "react-router";
@@ -9,8 +9,13 @@ import { mutate } from "swr";
 export const FeedCard = ({ feed, onRemove }) => {
   const appWindowId = `/feeds/${feed.id}`;
   const { shopDetails, apiKey } = useOutletContext();
-  const { feedStatus, isLoading, checkFailed, storefrontEnabled } =
-    useThemeBlocks();
+  const {
+    feedStatus,
+    addToThemeUrl,
+    isLoading,
+    checkFailed,
+    storefrontEnabled,
+  } = useThemeBlocks();
   const { added, wrongBlocks } = feedStatus(feed);
 
   useEffect(() => {
@@ -107,11 +112,10 @@ export const FeedCard = ({ feed, onRemove }) => {
                 <s-button
                   variant="tertiary"
                   icon="app-extension"
-                  href={themeEditorUrl({
+                  href={addToThemeUrl({
                     shop: shopDetails?.shop_domain,
                     apiKey,
-                    page: feed.page,
-                    type: feed.type,
+                    feed,
                   })}
                   target="_blank"
                   accessibilitylabel={`Add ${feed.label} to theme`}

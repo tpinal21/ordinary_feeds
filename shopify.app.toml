@@ -32,11 +32,6 @@ use_legacy_install_flow = false
 [auth]
 redirect_urls = [ "https://ordinary-feeds.vercel.app/api/auth" ]
 
-[shop.metafields.app.insta_feed_posts]
-type = "json"
-name = "Instagram feed cache"
-description = "Cached Instagram posts rendered by the storefront feed block."
-
 [shop.metafields.app.settings]
 type = "json"
 name = "App settings"

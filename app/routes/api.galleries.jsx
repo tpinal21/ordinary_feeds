@@ -3,10 +3,14 @@ import directus from "app/directus.server";
 import { GALLERIES } from "app/lib/constants";
 import {
   GALLERY_FIELDS,
+  missingAccount,
+  ownMedia,
+  readShopAccount,
   serverError,
   toGallery,
   toIgMedia,
 } from "app/lib/galleries.server";
+import { syncGalleryMetaobject } from "app/lib/gallery-metaobjects.server";
 import { badRequest, readJsonBody } from "app/lib/http.server";
 import { authenticate } from "../shopify.server";
 
@@ -44,7 +48,7 @@ export async function action({ request }) {
     );
   }
 
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
   const { title, type, media } = await readJsonBody(request);
@@ -52,15 +56,34 @@ export async function action({ request }) {
   if (!title?.trim()) return badRequest("title_required");
 
   try {
+    const account = await readShopAccount(shopDomain);
+    if (!account) return missingAccount();
+
     const gallery = await directus.request(
       createItem(
         GALLERIES,
-        { shop: shopDomain, title, type, ig_media: toIgMedia(media) },
+        {
+          shop: shopDomain,
+          title,
+          type,
+          ig_media: toIgMedia(ownMedia(media, account), account.id),
+        },
         { fields: GALLERY_FIELDS },
       ),
     );
 
-    return { success: true, data: toGallery(gallery) };
+    // The gallery exists in Directus now, so a failed mirror mustn't read as a
+    // failed create (a retry would make a second gallery). The next save of
+    // the gallery re-syncs it.
+    let metaobjectSynced = true;
+    try {
+      await syncGalleryMetaobject(admin, gallery.id, shopDomain);
+    } catch (err) {
+      metaobjectSynced = false;
+      console.error("[gallery] metaobject sync failed", err);
+    }
+
+    return { success: true, data: toGallery(gallery), metaobjectSynced };
   } catch (err) {
     return serverError("[gallery] create failed", err);
   }

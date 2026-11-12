@@ -2,6 +2,8 @@ import { createItem, readItems } from "@directus/sdk";
 import directus from "app/directus.server";
 import { FEEDS } from "app/lib/constants";
 import { FEED_PAGE_CODES, FEED_PAGES, FEED_TYPES } from "app/lib/feeds";
+import { syncFeedMetaobject } from "app/lib/feed-metaobjects.server";
+import { galleryNotFound, ownsGallery } from "app/lib/galleries.server";
 import { getShopFeeds } from "app/lib/shops.server";
 import { badRequest, readJsonBody } from "app/lib/http.server";
 import { authenticate } from "../shopify.server";
@@ -49,7 +51,7 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
   const payload = await readJsonBody(request);
@@ -62,6 +64,11 @@ export async function action({ request }) {
   if (!FEED_PAGE_CODES.includes(page)) return badRequest("invalid_page");
 
   try {
+    // The gallery id comes from the client; it has to be this shop's.
+    if (gallery?.id && !(await ownsGallery(shopDomain, gallery.id))) {
+      return galleryNotFound();
+    }
+
     const feed = await directus.request(
       createItem(
         FEEDS,
@@ -76,11 +83,26 @@ export async function action({ request }) {
             typeof settings === "object" && settings !== null ? settings : {},
           ),
         },
-        { fields: ["id", "label"] },
+        { fields: ["id", "label", "type", "page", "settings", "gallery"] },
       ),
     );
 
-    return { success: true, data: feed };
+    // The feed exists in Directus now, so a failed mirror mustn't read as a
+    // failed create (a retry would make a second feed). The next save of the
+    // feed re-syncs it.
+    let metaobjectSynced = true;
+    try {
+      await syncFeedMetaobject(admin, feed, shopDomain);
+    } catch (err) {
+      metaobjectSynced = false;
+      console.error("[feeds] metaobject sync failed", err);
+    }
+
+    return {
+      success: true,
+      data: { id: feed.id, label: feed.label },
+      metaobjectSynced,
+    };
   } catch (err) {
     console.error("[feeds] create failed", err);
     return Response.json(

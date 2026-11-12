@@ -42,6 +42,11 @@ export default function MediaGallery() {
       apiFetch(`/api/galleries/${id}`, { method: "PATCH", body }),
     {
       onSuccess: (data) => {
+        // apiFetch resolves on error responses too.
+        if (!data?.success) {
+          shopify.toast.show("Failed to update gallery", { isError: true });
+          return;
+        }
         reset(formValues, { keepDirty: false });
         navigate("/media-gallery");
         shopify.toast.show({

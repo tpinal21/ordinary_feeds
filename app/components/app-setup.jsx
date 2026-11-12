@@ -40,6 +40,7 @@ export default function AppSetup({
   const {
     data: themeCheck,
     feedStatus,
+    addToThemeUrl,
     isChecking: isCheckingThemeExtension,
   } = useThemeBlocks({ enabled: !!instagramAccount });
   const isThemeBlockAdded = themeCheck?.success ?? themeExtensionEnabled;
@@ -190,12 +191,7 @@ export default function AppSetup({
                               <s-button
                                 variant="secondary"
                                 icon="app-extension"
-                                href={themeEditorUrl({
-                                  shop,
-                                  apiKey,
-                                  page: feed.page,
-                                  type: feed.type,
-                                })}
+                                href={addToThemeUrl({ shop, apiKey, feed })}
                                 target="_blank"
                                 loading={isCheckingThemeExtension}
                               >

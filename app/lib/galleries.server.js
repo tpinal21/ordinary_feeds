@@ -1,7 +1,7 @@
 // Shared helpers for the `api.galleries*` resource routes.
 import { readItems } from "@directus/sdk";
 import directus from "app/directus.server";
-import { GALLERIES } from "app/lib/constants";
+import { GALLERIES, IG_ACCOUNTS } from "app/lib/constants";
 
 export const GALLERY_FIELDS = [
   "id",
@@ -17,14 +17,75 @@ export const GALLERY_FIELDS = [
   "ig_media.order",
 ];
 
+// Post fields a gallery save may write. `products` is left out on purpose:
+// sending it would replace (and usually wipe) the post's product tags.
+const MEDIA_FIELDS = [
+  "media_type",
+  "media_url",
+  "thumbnail_url",
+  "permalink",
+  "caption",
+  "timestamp",
+  "last_synced_at",
+];
+
 // The junction rows carry the ordering; the media itself is upserted by its
-// `media_id` so a post shared by two galleries is stored once.
-export const toIgMedia = (media) =>
-  media?.map(({ media_id, order, id, ...media }, index) => ({
-    ...(id && { id }),
-    instagram_media_id: { id: media_id, ...media },
-    order: index + 1,
-  }));
+// id so a post shared by two galleries is stored once.
+//
+// Items come in two shapes: rows read back from a gallery (`toGallery`) carry
+// `media_id` (the post) and `id` (the junction row); posts picked from the
+// media list carry only `id`, which is the post's.
+export const toIgMedia = (media, accountId) =>
+  media?.map((item, index) => {
+    const isRow = item.media_id != null;
+    const fields = Object.fromEntries(
+      MEDIA_FIELDS.filter((k) => item[k] !== undefined).map((k) => [
+        k,
+        item[k],
+      ]),
+    );
+
+    return {
+      ...(isRow && item.id && { id: item.id }),
+      instagram_media_id: {
+        id: isRow ? item.media_id : item.id,
+        // Required when the post isn't in Directus yet.
+        ...(accountId && { instagram_account: accountId }),
+        ...fields,
+      },
+      order: index + 1,
+    };
+  });
+
+// The shop's connected Instagram account, which new posts are stored under.
+export const readShopAccount = async (shopDomain) => {
+  const [account] = await directus.request(
+    readItems(IG_ACCOUNTS, {
+      filter: {
+        _and: [{ shop: { _eq: shopDomain } }, { status: { _eq: "CONNECTED" } }],
+      },
+      fields: ["id", "shop.shop_handle"],
+      limit: 1,
+    }),
+  );
+  return account ?? null;
+};
+
+// Media ids are `<instagram id>-<shop handle>`; anything else wasn't produced
+// for this shop, and saving it would re-home another shop's post.
+export const ownMedia = (media, account) => {
+  const suffix = `-${account.shop.shop_handle}`;
+  return (Array.isArray(media) ? media : []).filter((m) => {
+    const id = m?.media_id ?? m?.id;
+    return typeof id === "string" && id.endsWith(suffix);
+  });
+};
+
+export const missingAccount = () =>
+  Response.json(
+    { success: false, error: "missing_instagram_account" },
+    { status: 400 },
+  );
 
 export const toGallery = ({ ig_media, ...gallery }) => ({
   ...gallery,

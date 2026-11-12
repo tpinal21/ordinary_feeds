@@ -3,7 +3,7 @@ import { useLoaderData } from "react-router";
 
 // Debug view of everything the app keeps in Shopify for the current shop: the
 // three app-owned metaobject types (as declared in shopify.app.toml) and the
-// two shop metafields. Not linked from the nav — open /debug/metaobjects.
+// shop settings metafield. Not linked from the nav — open /debug/metaobjects.
 
 const TYPES = ["post", "gallery", "feed"];
 
@@ -36,10 +36,6 @@ const SHOP_QUERY = `#graphql
     shop {
       myshopifyDomain
       settings: metafield(namespace: "$app", key: "settings") {
-        jsonValue
-        updatedAt
-      }
-      feedCache: metafield(namespace: "$app", key: "insta_feed_posts") {
         jsonValue
         updatedAt
       }
@@ -134,12 +130,10 @@ export default function DebugMetaobjects() {
         </s-section>
       ))}
 
-      <s-section heading="Shop metafields">
+      <s-section heading="Shop metafield">
         <s-stack gap="base">
           <s-heading>$app.settings</s-heading>
           <Json value={shop?.settings ?? null} />
-          <s-heading>$app.insta_feed_posts</s-heading>
-          <Json value={shop?.feedCache ?? null} />
         </s-stack>
       </s-section>
     </s-page>

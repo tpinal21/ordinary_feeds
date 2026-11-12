@@ -132,6 +132,8 @@ sync the app writes the latest 24 posts as JSON to a shop-level metafield
 (`shop.metafields.$app:insta_feed_posts`). The Liquid block reads the metafield
 server-side and renders slides directly — no fetch, no exposed URLs, no CORS,
 no signature verification needed. Disconnect clears the metafield.
+_Superseded: the storefront now reads `$app:post`/`$app:gallery`/`$app:feed`
+metaobjects; the `insta_feed_posts` metafield was removed 2026-11-12._
 
 Files: `app/lib/instagram.server.js` (writeFeedMetafield/clearFeedMetafield),
 `extensions/feed-section/blocks/carousel.liquid`, `shopify.app.toml` (metafield

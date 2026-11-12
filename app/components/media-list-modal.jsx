@@ -3,6 +3,10 @@ import { useFetch } from "app/hooks/useFetch";
 import { apiFetch } from "app/lib/api-client";
 import { useState } from "react";
 
+// Posts picked from the Instagram list carry only `id` (the post); posts read
+// back from a gallery carry `media_id` (the post) and `id` (the gallery row).
+const mediaKey = (m) => m?.media_id ?? m?.id;
+
 export const MediaListModal = ({
   selected: defaultSelected = [],
   variant = "primary",
@@ -50,7 +54,7 @@ export const MediaListModal = ({
         <s-button
           slot="primary-action"
           variant="primary"
-          commandfor="modal"
+          commandfor={modalId}
           command="--hide"
           onClick={() => onSubmit(selected)}
         >
@@ -72,11 +76,11 @@ export const MediaListModal = ({
             <div className="grid grid-cols-3 mt-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2">
               {instagramPostsData?.data?.map((media, index) => (
                 <PostCard
-                  key={index}
+                  key={mediaKey(media) ?? index}
                   post={media}
-                  selected={
-                    !!selected.find((_) => _.media_id == media.media_id)
-                  }
+                  selected={selected.some(
+                    (item) => mediaKey(item) === mediaKey(media),
+                  )}
                   onSelect={(_selected) => {
                     // Copyrighted posts come without a media_url and can't be shown.
                     if (!media.media_url) return;
@@ -84,7 +88,9 @@ export const MediaListModal = ({
                       setSelected((prev) => [...prev, media]);
                     } else {
                       setSelected((prev) =>
-                        prev.filter((item) => item.media_id != media.media_id),
+                        prev.filter(
+                          (item) => mediaKey(item) !== mediaKey(media),
+                        ),
                       );
                     }
                   }}

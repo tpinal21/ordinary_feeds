@@ -33,7 +33,9 @@ const THEME_QUERY = `#graphql
   query MainThemeTemplates($filenames: [String!]!) {
     themes(first: 1, roles: [MAIN]) {
       nodes {
+        id
         name
+        updatedAt
         files(filenames: $filenames, first: 100) {
           nodes {
             filename
@@ -155,6 +157,16 @@ async function checkThemeExtension({ admin, shop }) {
   // Placed blocks naming a feed made for another page (e.g. a home page feed
   // on a product page). The block refuses to render those.
   let wrongPageBlocks = 0;
+  // Templates holding each kind of broken block, so the notices can open the
+  // theme editor right where the fix is.
+  const problemTemplates = { unassigned: [], orphaned: [], wrongPage: [] };
+  const flag = (kind, name) => {
+    if (!problemTemplates[kind].includes(name))
+      problemTemplates[kind].push(name);
+  };
+  // template -> every feed block on it and what it shows, for the home page's
+  // page-by-page status. Templates without a feed block are left out.
+  const placements = {};
 
   for (const { filename, body } of files) {
     const template = parseTemplate(body?.content ?? "");
@@ -181,16 +193,43 @@ async function checkThemeExtension({ admin, shop }) {
 
       blocks.push({ template: name, ...block, label });
 
-      if (block.disabled) continue;
+      // `typed` is false when the block falls back to the page's default feed.
+      const placement = {
+        block: block.block,
+        feedLabel: feedLabel || null,
+        typed: !!normalizeLabel(
+          typeof block.feed === "string" ? block.feed : "",
+        ),
+        status: "ok",
+      };
+      (placements[name] ??= []).push(placement);
+
+      if (block.disabled) {
+        placement.status = "disabled";
+        continue;
+      }
       blockAdded = true;
 
       // No label and no default for this template, or a label matching no feed.
-      if (!feedLabel) unassignedBlocks += 1;
-      else if (!label) orphanedBlocks += 1;
+      // A block left on its page's default whose feed doesn't exist yet isn't
+      // a mistake: it fills in once that feed is created.
+      if (!feedLabel) {
+        unassignedBlocks += 1;
+        flag("unassigned", name);
+        placement.status = "unassigned";
+      } else if (!label && !placement.typed) {
+        placement.status = "awaiting_feed";
+      } else if (!label) {
+        orphanedBlocks += 1;
+        flag("orphaned", name);
+        placement.status = "orphaned";
+      }
       if (!label) continue;
 
       if (metaobject.page?.value !== FEED_PAGES[pageCode(name)]) {
         wrongPageBlocks += 1;
+        flag("wrongPage", name);
+        placement.status = "wrong_page";
         continue;
       }
 
@@ -209,6 +248,10 @@ async function checkThemeExtension({ admin, shop }) {
         !entry.wrongBlocks.includes(block.block)
       ) {
         entry.wrongBlocks.push(block.block);
+      }
+      if (feedType && BLOCK_FEED_TYPES[block.block] !== feedType) {
+        placement.status = "wrong_type";
+        placement.feedType = feedType;
       }
     }
   }
@@ -232,6 +275,11 @@ async function checkThemeExtension({ admin, shop }) {
   return {
     success: blockAdded,
     themeName: theme?.name ?? null,
+    // Numeric id, for links to this theme's editor and preview.
+    themeId: theme?.id?.split("/").pop() ?? null,
+    themeUpdatedAt: theme?.updatedAt ?? null,
+    problemTemplates,
+    placements,
     storefrontEnabled,
     feeds,
     unassignedBlocks,

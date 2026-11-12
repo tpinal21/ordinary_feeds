@@ -1,11 +1,13 @@
 import { readItem, updateItem } from "@directus/sdk";
 import directus from "app/directus.server";
 import { FEEDS, SHOPS } from "app/lib/constants";
+import { syncFeedMetaobject } from "app/lib/feed-metaobjects.server";
+import { galleryNotFound, ownsGallery } from "app/lib/galleries.server";
 import { readJsonBody } from "app/lib/http.server";
 import { authenticate } from "../shopify.server";
 
 export async function action({ request, params }) {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
   const payload = await readJsonBody(request);
@@ -29,13 +31,34 @@ export async function action({ request, params }) {
       );
     }
 
-    await directus.request(
-      updateItem(FEEDS, params.id, {
-        gallery: gallery?.id ?? null,
-        // Stored as a JSON string — the read side parses it back out.
-        settings: JSON.stringify(settings ?? {}),
-      }),
+    // The gallery id comes from the client; it has to be this shop's.
+    if (gallery?.id && !(await ownsGallery(shopDomain, gallery.id))) {
+      return galleryNotFound();
+    }
+
+    const feed = await directus.request(
+      updateItem(
+        FEEDS,
+        params.id,
+        {
+          gallery: gallery?.id ?? null,
+          // Stored as a JSON string — the read side parses it back out.
+          settings: JSON.stringify(settings ?? {}),
+        },
+        { fields: ["id", "label", "type", "page", "settings", "gallery"] },
+      ),
     );
+
+    // Saving again re-runs this, so a failure here is safe to surface.
+    try {
+      await syncFeedMetaobject(admin, feed, shopDomain);
+    } catch (err) {
+      console.error("[feed] metaobject sync failed", err);
+      return Response.json(
+        { success: false, error: "metaobject_sync_failed" },
+        { status: 502 },
+      );
+    }
 
     return { success: true };
   } catch (err) {
