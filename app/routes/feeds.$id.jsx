@@ -11,7 +11,7 @@ import { apiFetch } from "app/lib/api-client";
 import { requestAppWindowClose } from "app/lib/app-window";
 import { FEEDS } from "app/lib/constants";
 import { feedSettings } from "app/lib/feeds";
-import { toFeed } from "app/lib/shops.server";
+import { MEDIA_PRODUCT_FIELDS, toFeed } from "app/lib/shops.server";
 import { Suspense } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -26,7 +26,14 @@ export async function loader({ params }) {
   const feed = directus
     .request(
       readItem(FEEDS, params.id, {
-        fields: ["*", "gallery.*", "gallery.ig_media.instagram_media_id.*"],
+        fields: [
+          "*",
+          "gallery.*",
+          "gallery.ig_media.instagram_media_id.*",
+          ...MEDIA_PRODUCT_FIELDS.map(
+            (f) => `gallery.ig_media.instagram_media_id.${f}`,
+          ),
+        ],
       }),
     )
     .then(toFeed)

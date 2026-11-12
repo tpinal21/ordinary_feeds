@@ -105,7 +105,7 @@ export async function loader({ request }) {
         media_type: m.media_type,
         media_url: m.media_url ?? null,
         thumbnail_url: m.thumbnail_url ?? null,
-        // permalink: m.permalink ?? null,
+        permalink: m.permalink ?? null,
         caption: m.caption ?? null,
         timestamp: m.timestamp ? new Date(m.timestamp).toISOString() : null,
         last_synced_at: timeNow,

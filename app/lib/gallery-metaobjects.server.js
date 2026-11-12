@@ -29,6 +29,7 @@ const readGallery = async (galleryId, shopDomain) => {
         "ig_media.instagram_media_id.media_type",
         "ig_media.instagram_media_id.media_url",
         "ig_media.instagram_media_id.thumbnail_url",
+        "ig_media.instagram_media_id.permalink",
         "ig_media.instagram_media_id.caption",
         "ig_media.instagram_media_id.products.product_id.id",
       ],

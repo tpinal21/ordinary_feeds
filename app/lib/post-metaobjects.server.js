@@ -39,6 +39,7 @@ const toFields = (media) => {
     media_type: media.media_type,
     media_url: media.media_url,
     thumbnail_url: media.thumbnail_url,
+    permalink: media.permalink,
     caption: media.caption,
     products: JSON.stringify(
       (media.products ?? []).map((p) => p.product_id.id),

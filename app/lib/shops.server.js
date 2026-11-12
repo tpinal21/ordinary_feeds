@@ -2,10 +2,21 @@ import { readItem } from "@directus/sdk";
 import { SHOPS } from "app/lib/constants";
 import directus from "../directus.server";
 
+// Tagged products as the post dialog shows them, relative to a media item.
+export const MEDIA_PRODUCT_FIELDS = [
+  "products.id",
+  "products.product_id.id",
+  "products.product_id.title",
+  "products.product_id.images.original_src",
+];
+
 const FEED_FIELDS = [
   "feeds.*",
   "feeds.gallery.*",
   "feeds.gallery.ig_media.instagram_media_id.*",
+  ...MEDIA_PRODUCT_FIELDS.map(
+    (f) => `feeds.gallery.ig_media.instagram_media_id.${f}`,
+  ),
 ];
 
 // Flattens Directus' nested media rows into the shape the client renders.
@@ -27,6 +38,9 @@ export function toFeed({ id, page, type, label, settings, gallery }) {
               id: m.id,
               last_synced_at: m.last_synced_at,
               media_url: m.media_url,
+              // The post dialog shows these.
+              caption: m.caption,
+              permalink: m.permalink,
               products: m.products,
               thumbnail_url: m.thumbnail_url,
               timestamp: m.timestamp,

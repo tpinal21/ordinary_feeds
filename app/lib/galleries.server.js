@@ -2,6 +2,7 @@
 import { readItems } from "@directus/sdk";
 import directus from "app/directus.server";
 import { GALLERIES, IG_ACCOUNTS } from "app/lib/constants";
+import { MEDIA_PRODUCT_FIELDS } from "app/lib/shops.server";
 
 export const GALLERY_FIELDS = [
   "id",
@@ -14,6 +15,11 @@ export const GALLERY_FIELDS = [
   "ig_media.instagram_media_id.media_url",
   "ig_media.instagram_media_id.thumbnail_url",
   "ig_media.instagram_media_id.timestamp",
+  // Shown in the feed preview's post dialog. Never written back: toIgMedia
+  // only sends MEDIA_FIELDS.
+  "ig_media.instagram_media_id.caption",
+  "ig_media.instagram_media_id.permalink",
+  ...MEDIA_PRODUCT_FIELDS.map((f) => `ig_media.instagram_media_id.${f}`),
   "ig_media.order",
 ];
 
@@ -64,7 +70,7 @@ export const readShopAccount = async (shopDomain) => {
       filter: {
         _and: [{ shop: { _eq: shopDomain } }, { status: { _eq: "CONNECTED" } }],
       },
-      fields: ["id", "shop.shop_handle"],
+      fields: ["id", "username", "shop.shop_handle"],
       limit: 1,
     }),
   );

@@ -46,6 +46,9 @@ export default function PostCard({
   onTagProduct,
   autoPlay = false,
   checkBoxDisabled = false,
+  // Given, a click opens the post (the feed's PostDialog) instead of
+  // toggling playback.
+  onOpen,
   className,
 }) {
   const videoRef = useRef(null);
@@ -201,7 +204,7 @@ export default function PostCard({
       )}
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
-      onClick={togglePlay}
+      onClick={onOpen ?? togglePlay}
     >
       {!hideCheckbox && !showDeleteButton && (
         <div

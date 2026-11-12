@@ -1,4 +1,5 @@
 import PostCard from "app/components/post-card";
+import { PostDialog, useInstagramUsername } from "app/components/post-dialog";
 import { useState } from "react";
 
 // Columns, gap, radius and tile shape are all resolved in grid.css from these
@@ -22,6 +23,8 @@ export function FeedGrid({ media = [], settings }) {
   // `columns` is only the count at 1080px — what these two really fix is the
   // batch size, and "Load more" reveals another one. Changing either setting
   // re-frames the grid, so the reveal starts over with it.
+  const [openIndex, setOpenIndex] = useState(null);
+  const username = useInstagramUsername();
   const [shownRows, setShownRows] = useState(rows);
   const [framedBy, setFramedBy] = useState({ rows, columns });
 
@@ -52,6 +55,7 @@ export function FeedGrid({ media = [], settings }) {
               hideCheckbox
               className="insta-grid__media"
               autoPlay={settings?.media_auto_play}
+              onOpen={() => setOpenIndex(ind)}
             />
           ),
         )}
@@ -74,6 +78,12 @@ export function FeedGrid({ media = [], settings }) {
           </button>
         </div>
       )}
+      <PostDialog
+        posts={visible}
+        index={openIndex}
+        onIndexChange={setOpenIndex}
+        username={username}
+      />
     </div>
   );
 }

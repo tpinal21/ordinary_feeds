@@ -1,4 +1,5 @@
 import PostCard from "app/components/post-card";
+import { PostDialog, useInstagramUsername } from "app/components/post-dialog";
 import {
   Carousel,
   CarouselContent,
@@ -22,6 +23,10 @@ const carouselVars = (settings) => ({
 
 export function FeedCarousel({ media = [], settings }) {
   const [api, setApi] = useState(null);
+  // Index of the post open in the dialog, null while closed.
+  const [openIndex, setOpenIndex] = useState(null);
+  const username = useInstagramUsername();
+  const posts = media.filter((m) => typeof m !== "number");
 
   // Slide widths animate when the merchant changes "slides per view" (see
   // carousel.css). Embla reads the slides with offsetWidth once and derives the
@@ -90,6 +95,7 @@ export function FeedCarousel({ media = [], settings }) {
                 hideCheckbox
                 className="insta-carousel__media"
                 autoPlay={settings?.media_auto_play}
+                onOpen={() => setOpenIndex(posts.indexOf(m))}
               />
             )}
           </CarouselItem>
@@ -101,6 +107,12 @@ export function FeedCarousel({ media = [], settings }) {
           <CarouselNext />
         </>
       )}
+      <PostDialog
+        posts={posts}
+        index={openIndex}
+        onIndexChange={setOpenIndex}
+        username={username}
+      />
     </Carousel>
   );
 }

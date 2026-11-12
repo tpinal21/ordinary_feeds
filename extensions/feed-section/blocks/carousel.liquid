@@ -64,6 +64,8 @@
   assign cs_speed = carousel.speed | default: 1
   assign cs_gap = carousel.item_gap | default: 8, allow_false: true
   assign cs_radius = carousel.border_radius | default: 8, allow_false: true
+  # Written by the app when the feed is saved; shown in the post dialog.
+  assign ig_username = carousel.instagram_username
 
   # App-wide settings (the Settings page).
   assign app_settings = shop.metafields["$app"].settings.value
@@ -124,7 +126,15 @@
             assign poster = post.thumbnail_url.value | default: media_url
             assign alt_text = post.caption.value | default: 'Instagram post' | strip_html | truncate: 80
           -%}
-          <div class="insta-carousel__slide" role="group" aria-roledescription="slide" data-insta-card>
+          <div
+            class="insta-carousel__slide"
+            role="group"
+            aria-roledescription="slide"
+            data-insta-card
+            data-src="{{ media_url | escape }}"
+            data-poster="{{ poster | escape }}"
+            data-permalink="{{ post.permalink.value | escape }}"
+          >
             <div class="insta-carousel__media">
               <video
                 class="insta-carousel__video"
@@ -149,6 +159,67 @@
                 </svg>
               </button>
             </div>
+
+            {%- comment -%}
+              What the post dialog shows beside the video; carousel.js copies it
+              in when this post is opened.
+            {%- endcomment -%}
+            <template data-insta-details>
+              {% if post.caption.value != blank %}
+                <button type="button" class="insta-dialog__caption" data-insta-caption>
+                  {{- post.caption.value | escape | newline_to_br -}}
+                </button>
+              {% endif %}
+              {%- assign tagged = post.products.value -%}
+              {% if tagged.size > 0 %}
+                <div class="insta-dialog__products">
+                  <span class="insta-dialog__products-heading">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    Shop this post
+                    {% if tagged.size > 1 %}<span class="insta-dialog__products-count">({{ tagged.size }})</span>{% endif %}
+                  </span>
+                  <div class="insta-dialog__product-list">
+                    {% for product in tagged %}
+                      <a class="insta-dialog__product" href="{{ product.url }}">
+                        <span class="insta-dialog__product-image">
+                          {% if product.featured_image %}
+                            <img
+                              src="{{ product.featured_image | image_url: width: 160 }}"
+                              alt=""
+                              width="56"
+                              height="56"
+                              loading="lazy"
+                            >
+                          {% endif %}
+                        </span>
+                        <span class="insta-dialog__product-info">
+                          <span class="insta-dialog__product-title">{{ product.title | escape }}</span>
+                          {%- comment -%}
+                            Live from Shopify: `price` is the cheapest variant,
+                            hence "From" when variants differ.
+                          {%- endcomment -%}
+                          <span class="insta-dialog__product-price">
+                            {%- if product.price_varies -%}
+                              <span class="insta-dialog__product-from">From</span>
+                            {%- endif -%}
+                            <span class="insta-dialog__product-amount{% if product.compare_at_price > product.price %} is-sale{% endif %}">
+                              {{- product.price | money -}}
+                            </span>
+                            {%- if product.compare_at_price > product.price -%}
+                              <s>{{ product.compare_at_price | money }}</s>
+                            {%- endif -%}
+                            {%- unless product.available -%}
+                              <span class="insta-dialog__product-soldout">Sold out</span>
+                            {%- endunless -%}
+                          </span>
+                        </span>
+                        <svg class="insta-dialog__product-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                      </a>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+            </template>
           </div>
         {% endfor %}
       </div>
@@ -169,6 +240,83 @@
       <span class="insta-carousel__sr">Next slide</span>
     </button>
     {% endunless %}
+
+    {%- comment -%}
+      Reels-style post viewer, styled after the app's shadcn Dialog
+      (app/components/post-dialog.jsx). A native <dialog> opened with
+      showModal() sits in the top layer, above any theme stacking context.
+    {%- endcomment -%}
+    <dialog class="insta-dialog" data-insta-dialog aria-label="Instagram post">
+      <div class="insta-dialog__layout">
+        <div class="insta-dialog__info insta-dialog__info--side" data-insta-info>
+          {% if ig_username != blank %}
+            <a
+              class="insta-dialog__account"
+              href="https://www.instagram.com/{{ ig_username | url_encode }}/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="insta-dialog__avatar">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3"/></svg>
+              </span>
+              <span class="insta-dialog__username">{{ ig_username | escape }}</span>
+            </a>
+          {% endif %}
+          <div class="insta-dialog__details" data-insta-details-slot></div>
+        </div>
+
+        {%- comment -%}
+          Embla viewport: the track must stay its first child. carousel.js
+          fills it with one slide per post and moves the single <video> into
+          the current one.
+        {%- endcomment -%}
+        <div class="insta-dialog__stage" data-insta-dialog-stage>
+          <div class="insta-dialog__track" data-insta-dialog-track></div>
+          <video class="insta-dialog__video" data-insta-dialog-video loop playsinline></video>
+          <span class="insta-dialog__play" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5"/></svg>
+          </span>
+          <button type="button" class="insta-dialog__mute" data-insta-dialog-mute aria-label="Mute video">
+            <svg class="insta-carousel__icon insta-dialog__icon--muted" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M12 4L9.91 6.09L12 8.18M4.27 3L3 4.27L7.73 9H3v6h4l5 5v-6.73l4.25 4.26c-.67.51-1.42.93-2.25 1.17v2.07c1.38-.32 2.63-.95 3.68-1.81L19.73 21L21 19.73l-9-9M19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.9 8.9 0 0 0 21 12c0-4.28-3-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71m-2.5 0c0-1.77-1-3.29-2.5-4.03v2.21l2.45 2.45c.05-.2.05-.42.05-.63"/>
+            </svg>
+            <svg class="insta-carousel__icon insta-dialog__icon--unmuted" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M3 9h4l5-5v16l-5-5H3V9zm18 3a9.003 9.003 0 0 1-7 8.777V18.71a7.003 7.003 0 0 0 0-13.42V3.223c4.008.91 7 4.494 7 8.777zm-4 0a5.001 5.001 0 0 1-3 4.584V7.416c1.766.772 3 2.534 3 4.584z"/>
+            </svg>
+          </button>
+          <div class="insta-dialog__progress"><div class="insta-dialog__progress-bar" data-insta-dialog-progress></div></div>
+          <div class="insta-dialog__info insta-dialog__info--overlay" data-insta-info-overlay></div>
+        </div>
+
+        <div class="insta-dialog__actions">
+          <a class="insta-dialog__action" data-insta-dialog-permalink target="_blank" rel="noopener" hidden>
+            <span class="insta-dialog__round">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3"/></svg>
+            </span>
+            <span class="insta-dialog__action-label">Instagram</span>
+          </a>
+          <button type="button" class="insta-dialog__action" data-insta-dialog-share>
+            <span class="insta-dialog__round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </span>
+            <span class="insta-dialog__action-label">Share</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="insta-dialog__nav">
+        <button type="button" class="insta-dialog__round insta-dialog__round--lg" data-insta-dialog-prev aria-label="Previous post">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+        </button>
+        <button type="button" class="insta-dialog__round insta-dialog__round--lg" data-insta-dialog-next aria-label="Next post">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+
+      <button type="button" class="insta-dialog__round insta-dialog__close" data-insta-dialog-close aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </dialog>
   </div>
 {% endif %}
 

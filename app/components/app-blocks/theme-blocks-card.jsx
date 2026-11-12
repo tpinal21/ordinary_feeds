@@ -5,8 +5,6 @@ import {
 } from "app/hooks/useThemeBlocks";
 import { useOutletContext } from "react-router";
 
-const BLOCK_NAMES = { carousel: "Carousel", grid: "Grid", popup: "Popup" };
-
 // What each placement status means for the merchant, from the check's
 // `placements[template][].status`.
 const STATUSES = {
@@ -29,29 +27,36 @@ const sortTemplates = (a, b) => {
   return rank(a) - rank(b) || a.localeCompare(b);
 };
 
-// `awaiting_feed` (a block left on its page's default, whose feed doesn't
-// exist yet) gets no badge: it fills in once that feed is created.
-const BlockRow = ({ placement }) => {
+const BlockNode = ({ placement }) => {
   const status = STATUSES[placement.status];
   return (
-    <div className="flex items-center justify-between gap-2 py-1.5">
-      <div className="flex flex-col min-w-0">
+    <li className="flex items-center gap-2 min-h-8 pl-3">
+      <div className="flex items-center gap-1.5 min-w-0">
         <s-text type="strong">
-          {BLOCK_NAMES[placement.block] ?? placement.block} block
+          {placement.feedLabel ? `${placement.feedLabel}` : "No feed label"}
         </s-text>
-        <span className="text-xs text-neutral-500 truncate">
-          {placement.feedLabel
-            ? `${placement.feedLabel}${placement.typed ? "" : " (default)"}`
-            : "No feed label"}
-        </span>
       </div>
       {status && <s-badge tone={status.tone}>{status.label}</s-badge>}
-    </div>
+    </li>
   );
 };
 
-// The published theme and, page by page, every feed block placed in it with
-// what it shows. Pages without a feed block are left out.
+const PageNode = ({ shop, template, placements }) => (
+  <li>
+    <div className="flex items-center justify-between gap-2">
+      <s-heading variant="headingMd">{templateLabel(template)}</s-heading>
+      <s-link href={themeCustomizeUrl({ shop, template })} target="_blank">
+        Edit
+      </s-link>
+    </div>
+    <ul>
+      {placements.map((placement, i) => (
+        <BlockNode key={i} placement={placement} />
+      ))}
+    </ul>
+  </li>
+);
+
 export const ThemeBlocksCard = () => {
   const { shopDetails } = useOutletContext();
   const shop = shopDetails?.shop_domain;
@@ -97,27 +102,16 @@ export const ThemeBlocksCard = () => {
             No feed blocks in your theme yet. Add one from the theme editor.
           </s-text>
         ) : (
-          <div className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-2">
             {templates.map((template) => (
-              <div
+              <PageNode
                 key={template}
-                className="rounded-md border border-[#e3e3e3] px-3 py-2"
-              >
-                <div className="flex items-center justify-between gap-2 pb-1 border-b border-[#ebebeb]">
-                  <s-text type="strong">{templateLabel(template)}</s-text>
-                  <s-link
-                    href={themeCustomizeUrl({ shop, template })}
-                    target="_blank"
-                  >
-                    Edit
-                  </s-link>
-                </div>
-                {placements[template].map((placement, i) => (
-                  <BlockRow key={i} placement={placement} />
-                ))}
-              </div>
+                shop={shop}
+                template={template}
+                placements={placements[template]}
+              />
             ))}
-          </div>
+          </ul>
         )}
 
         <s-stack direction="inline" gap="small">

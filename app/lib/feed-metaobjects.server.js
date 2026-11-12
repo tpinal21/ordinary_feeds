@@ -2,6 +2,7 @@
 // blocks read (label, type, page, settings and its gallery). Directus stays
 // the source of truth; this runs after every create and update.
 import { feedSettings } from "app/lib/feeds";
+import { readShopAccount } from "app/lib/galleries.server";
 import { syncGalleryMetaobject } from "app/lib/gallery-metaobjects.server";
 import { postHandle } from "app/lib/post-metaobjects.server";
 
@@ -27,13 +28,23 @@ export async function syncFeedMetaobject(admin, feed, shopDomain) {
     ? (await syncGalleryMetaobject(admin, galleryId, shopDomain)).id
     : null;
 
+  // Shown in the storefront's post dialog; Liquid has no other way to reach
+  // the connected account.
+  const account = await readShopAccount(shopDomain);
+
   const fields = [
     { key: "label", value: feed.label },
     { key: "type", value: feed.type },
     { key: "page", value: feed.page ?? "" },
     // Stored with the type's defaults filled in, so the block renders the
     // same settings the editor shows.
-    { key: "settings", value: JSON.stringify(feedSettings(feed)) },
+    {
+      key: "settings",
+      value: JSON.stringify({
+        ...feedSettings(feed),
+        instagram_username: account?.username ?? null,
+      }),
+    },
     // Empty clears a gallery that was removed.
     { key: "gallery", value: gallery ?? "" },
   ];
