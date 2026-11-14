@@ -38,6 +38,13 @@ export const FEED_PAGES = {
 
 export const FEED_PAGE_CODES = Object.keys(FEED_PAGES);
 
+// PRODUCT galleries show the posts tagged with the product being viewed, so
+// they only work on product pages: on the home and collection pages the
+// theme block has no product and would render nothing. `page` is the long
+// form (FEED_PAGES value).
+export const galleryAllowedOnPage = (galleryType, page) =>
+  galleryType !== "PRODUCT" || page === FEED_PAGES.PP;
+
 // `s-app-window` id for the create flow. Shared so the frame that owns the
 // element can match the close request the route inside it broadcasts.
 export const feedCreateWindowId = (type, page) => `${type}_${page}`;

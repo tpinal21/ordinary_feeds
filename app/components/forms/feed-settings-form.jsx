@@ -8,15 +8,16 @@ const FORMS = {
 };
 
 // Create and edit render the same panel; only the feed's type picks which
-// settings go in it.
-export default function FeedSettingsForm({ type }) {
+// settings go in it. `page` (long form, e.g. HOME_PAGE) limits which
+// galleries can be picked.
+export default function FeedSettingsForm({ type, page }) {
   const Form = FORMS[type];
 
   if (!Form) return null;
 
   return (
     <Card className="flex flex-col gap-4 mt-2 px-3 max-w-4xl mx-auto w-full">
-      <Form />
+      <Form page={page} />
     </Card>
   );
 }

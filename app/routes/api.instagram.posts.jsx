@@ -3,6 +3,10 @@ import directus from "app/directus.server";
 import { IG_ACCOUNTS, IG_MEDIA } from "app/lib/constants";
 import { readJsonBody } from "app/lib/http.server";
 import { syncPostMetaobjects } from "app/lib/post-metaobjects.server";
+import {
+  readTaggedProductIds,
+  syncProductPostMetafields,
+} from "app/lib/product-post-metafields.server";
 import { authenticate } from "../shopify.server";
 
 const MAX_PER_PAGE = 50;
@@ -20,9 +24,63 @@ const PRODUCT_FIELDS = [
 // Safety cap on Graph API round-trips per request (100 posts each).
 const MAX_IG_REQUESTS = 20;
 
+// Posts already stored in Directus where the given Shopify product is tagged,
+// newest first. Product tags only exist in Directus, so there's no need to
+// go to Instagram for these.
+const TAGGED_POST_FIELDS = [
+  "id",
+  "media_type",
+  "media_url",
+  "thumbnail_url",
+  "permalink",
+  "caption",
+  "like_count",
+  "timestamp",
+  "last_synced_at",
+  ...PRODUCT_FIELDS.filter((f) => f !== "id"),
+];
+
+async function loadTaggedPosts(shopDomain, productId, limit) {
+  const posts = await directus.request(
+    readItems(IG_MEDIA, {
+      filter: {
+        _and: [
+          { instagram_account: { shop: { _eq: shopDomain } } },
+          { instagram_account: { status: { _eq: "CONNECTED" } } },
+          { products: { product_id: { id: { _eq: productId } } } },
+        ],
+      },
+      fields: TAGGED_POST_FIELDS,
+      sort: ["-timestamp"],
+      limit,
+    }),
+  );
+  return { success: true, data: posts };
+}
+
 export async function loader({ request }) {
   const { session } = await authenticate.admin(request);
   const shopDomain = session.shop;
+
+  // `?product_id=<gid>&limit=<n>` -> only posts tagged with that product.
+  const productId = new URL(request.url).searchParams.get("product_id");
+  if (productId) {
+    const limitParam = parseInt(
+      new URL(request.url).searchParams.get("limit"),
+      10,
+    );
+    const limit =
+      limitParam > 0 ? Math.min(limitParam, MAX_PER_PAGE) : MAX_PER_PAGE;
+    try {
+      return await loadTaggedPosts(shopDomain, productId, limit);
+    } catch (err) {
+      console.error("[instagram] tagged posts fetch failed", err);
+      return Response.json(
+        { success: false, error: String(err?.message ?? err) },
+        { status: 500 },
+      );
+    }
+  }
 
   try {
     const instagramAccount = await directus.request(
@@ -50,6 +108,8 @@ export async function loader({ request }) {
       "permalink",
       "caption",
       "timestamp",
+      // Omitted by Instagram when the owner hides likes on that post.
+      "like_count",
     ].join(",");
 
     // Optional pagination: `?page=1&per_page=12`. Without them every fetched
@@ -107,6 +167,7 @@ export async function loader({ request }) {
         thumbnail_url: m.thumbnail_url ?? null,
         permalink: m.permalink ?? null,
         caption: m.caption ?? null,
+        like_count: m.like_count ?? null,
         timestamp: m.timestamp ? new Date(m.timestamp).toISOString() : null,
         last_synced_at: timeNow,
         products: productsById.get(`${m.id}-${shopHandle}`) ?? [],
@@ -181,6 +242,12 @@ export async function action({ request }) {
       );
     }
 
+    // Tags as they were before this save, so products untagged by it get
+    // their storefront post list cleared too.
+    const previouslyTagged = await readTaggedProductIds(
+      existing.map((m) => m.id),
+    );
+
     const existingIds = new Set(existing.map((m) => m.id));
     const toUpdate = media.filter((m) => existingIds.has(m.id));
     const toCreate = media.filter((m) => !existingIds.has(m.id));
@@ -199,6 +266,11 @@ export async function action({ request }) {
     // so a product tag shows up there straight away.
     try {
       await syncPostMetaobjects(admin, media);
+      // Then each affected product's post list, which PRODUCT galleries read.
+      await syncProductPostMetafields(admin, shopDomain, [
+        ...previouslyTagged,
+        ...media.flatMap((m) => m.products.map((p) => p.product_id.id)),
+      ]);
     } catch (err) {
       console.error("[instagram] post metaobject sync failed", err);
       return Response.json(
@@ -236,7 +308,9 @@ function toMediaItem(m, accountId) {
     media_type: m.media_type ?? null,
     media_url: m.media_url ?? null,
     thumbnail_url: m.thumbnail_url ?? null,
+    permalink: m.permalink ?? null,
     caption: m.caption ?? null,
+    like_count: Number.isInteger(m.like_count) ? m.like_count : null,
     timestamp: m.timestamp ?? null,
     last_synced_at: m.last_synced_at ?? null,
     products: (Array.isArray(m.products) ? m.products : [])

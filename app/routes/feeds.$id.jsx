@@ -1,7 +1,12 @@
 import { readItem } from "@directus/sdk";
 import AppBridgeForm from "app/components/app-bridge-form";
-import { FeedPreview } from "app/components/feed-preview";
+import { FeedPreview, PREVIEW_PLACEHOLDERS } from "app/components/feed-preview";
 import FeedSettingsForm from "app/components/forms/feed-settings-form";
+import {
+  ProductPreviewBar,
+  usePreviewProduct,
+  useTaggedPosts,
+} from "app/components/product-preview";
 import { ResizablePreview } from "app/components/resizable-preview";
 import { Spinner } from "app/components/ui/spinner";
 import directus from "app/directus.server";
@@ -14,12 +19,7 @@ import { feedSettings } from "app/lib/feeds";
 import { MEDIA_PRODUCT_FIELDS, toFeed } from "app/lib/shops.server";
 import { Suspense } from "react";
 import { useForm } from "react-hook-form";
-import {
-  Await,
-  useLoaderData,
-  useParams,
-  useRevalidator,
-} from "react-router";
+import { Await, useLoaderData, useParams, useRevalidator } from "react-router";
 
 export async function loader({ params }) {
   // Not awaited: the page shell streams immediately and suspends until the feed arrives.
@@ -82,10 +82,23 @@ function FeedsEditForm({ feedDetails }) {
   // The loader already shipped the feed's own gallery; the list is only needed
   // to preview a different one the merchant picks.
   const { galleries } = useGalleries();
-  const media =
-    galleries?.find((g) => g.id === galleryId)?.media ??
-    feedDetails?.gallery?.media ??
-    [];
+  const gallery =
+    galleries?.find((g) => g.id === galleryId) ??
+    (feedDetails?.gallery?.id === galleryId ? feedDetails.gallery : null);
+
+  // A PRODUCT gallery's posts depend on the product page it's shown on, so
+  // the preview needs a product to show anything real.
+  const isProductGallery = gallery?.type === "PRODUCT";
+  const previewProduct = usePreviewProduct();
+  const tagged = useTaggedPosts(
+    isProductGallery ? previewProduct.product : null,
+    gallery?.post_limit ?? 20,
+  );
+  const media = isProductGallery
+    ? tagged.posts.length
+      ? tagged.posts
+      : PREVIEW_PLACEHOLDERS
+    : (gallery?.media ?? []);
 
   const revalidator = useRevalidator();
 
@@ -129,6 +142,13 @@ function FeedsEditForm({ feedDetails }) {
         Save
       </s-button>
       <div className="flex flex-col gap-2">
+        {isProductGallery && (
+          <ProductPreviewBar
+            product={previewProduct.product}
+            onChoose={previewProduct.choose}
+            tagged={tagged}
+          />
+        )}
         <ResizablePreview>
           <FeedPreview
             type={feedDetails?.type}
@@ -142,7 +162,7 @@ function FeedsEditForm({ feedDetails }) {
           onSubmit={handleFormSubmit}
           showSaveBar={false}
         >
-          <FeedSettingsForm type={feedDetails?.type} />
+          <FeedSettingsForm type={feedDetails?.type} page={feedDetails?.page} />
         </AppBridgeForm>
       </div>
     </s-page>

@@ -42,10 +42,10 @@ const COLUMNS_TOOLTIP = (
   </>
 );
 
-export default function GridSettingsForm() {
+export default function GridSettingsForm({ page }) {
   return (
     <>
-      <MediaSettingsSection />
+      <MediaSettingsSection page={page} />
 
       <div className="flex flex-col gap-2">
         <s-heading>Grid settings</s-heading>

@@ -1,7 +1,12 @@
 import { createItem, readItems } from "@directus/sdk";
 import directus from "app/directus.server";
 import { FEEDS } from "app/lib/constants";
-import { FEED_PAGE_CODES, FEED_PAGES, FEED_TYPES } from "app/lib/feeds";
+import {
+  FEED_PAGE_CODES,
+  FEED_PAGES,
+  FEED_TYPES,
+  galleryAllowedOnPage,
+} from "app/lib/feeds";
 import { syncFeedMetaobject } from "app/lib/feed-metaobjects.server";
 import { galleryNotFound, ownsGallery } from "app/lib/galleries.server";
 import { getShopFeeds } from "app/lib/shops.server";
@@ -65,8 +70,12 @@ export async function action({ request }) {
 
   try {
     // The gallery id comes from the client; it has to be this shop's.
-    if (gallery?.id && !(await ownsGallery(shopDomain, gallery.id))) {
-      return galleryNotFound();
+    if (gallery?.id) {
+      const owned = await ownsGallery(shopDomain, gallery.id);
+      if (!owned) return galleryNotFound();
+      if (!galleryAllowedOnPage(owned.type, FEED_PAGES[page])) {
+        return badRequest("gallery_not_allowed_on_page");
+      }
     }
 
     const feed = await directus.request(

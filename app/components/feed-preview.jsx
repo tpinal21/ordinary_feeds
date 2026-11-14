@@ -1,6 +1,9 @@
 import { FeedCarousel } from "app/components/feed-carousel";
 import { FeedGrid } from "app/components/feed-grid";
 
+// Placeholder tiles so a preview isn't empty before it has posts.
+export const PREVIEW_PLACEHOLDERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 const PREVIEWS = {
   CAROUSEL: FeedCarousel,
   GRID: FeedGrid,

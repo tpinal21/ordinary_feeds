@@ -8,7 +8,11 @@ import {
 } from "app/components/ui/select";
 import { Slider } from "app/components/ui/slider";
 import { useGalleries } from "app/hooks/useGalleries";
-import { BORDER_RADIUS_MAX, ITEM_GAP_MAX } from "app/lib/feeds";
+import {
+  BORDER_RADIUS_MAX,
+  galleryAllowedOnPage,
+  ITEM_GAP_MAX,
+} from "app/lib/feeds";
 import { Controller, useFormContext } from "react-hook-form";
 
 // One labelled row of the settings panel. `alignStart` is for controls taller
@@ -125,13 +129,21 @@ export const PixelSliderField = ({ name, label, max }) => {
   );
 };
 
-export const GallerySelect = ({ name }) => {
+export const GallerySelect = ({ name, page }) => {
   const { getValues, control } = useFormContext();
   const { galleries, isLoading } = useGalleries();
 
+  // Galleries that can't render on this page (see galleryAllowedOnPage) are
+  // left out, unless the feed already uses one, so its value still shows.
+  const current = getValues(name);
   const galleryList = isLoading
-    ? [{ label: "Loading galleries...", value: getValues(name) }]
-    : (galleries || []).map((g) => ({ label: g.title, value: g.id }));
+    ? [{ label: "Loading galleries...", value: current }]
+    : (galleries || [])
+        .filter(
+          (g) =>
+            !page || g.id === current || galleryAllowedOnPage(g.type, page),
+        )
+        .map((g) => ({ label: g.title, value: g.id }));
 
   return (
     <div className="inline-flex gap-4">
@@ -157,10 +169,10 @@ export const GallerySelect = ({ name }) => {
 };
 
 // The gallery and playback settings every feed type has, whatever it renders.
-export const MediaSettingsSection = () => (
+export const MediaSettingsSection = ({ page }) => (
   <div className="flex flex-col gap-2">
     <s-heading>Media settings</s-heading>
-    <GallerySelect name="gallery.id" />
+    <GallerySelect name="gallery.id" page={page} />
     <SwitchField name="settings.media_auto_play" label="Video auto play" />
   </div>
 );

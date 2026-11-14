@@ -1,5 +1,9 @@
 import PostCard from "app/components/post-card";
-import { PostDialog, useInstagramUsername } from "app/components/post-dialog";
+import {
+  PostDialog,
+  useInstagramUsername,
+  usePostClick,
+} from "app/components/post-dialog";
 import { useState } from "react";
 
 // Columns, gap, radius and tile shape are all resolved in grid.css from these
@@ -35,6 +39,7 @@ export function FeedGrid({ media = [], settings }) {
 
   const visible =
     overflow === "expand" ? media : media.slice(0, columns * shownRows);
+  const onPostClick = usePostClick(visible, setOpenIndex);
   const hasMore = overflow === "load_more" && visible.length < media.length;
 
   return (
@@ -55,7 +60,7 @@ export function FeedGrid({ media = [], settings }) {
               hideCheckbox
               className="insta-grid__media"
               autoPlay={settings?.media_auto_play}
-              onOpen={() => setOpenIndex(ind)}
+              onOpen={() => onPostClick(ind)}
             />
           ),
         )}

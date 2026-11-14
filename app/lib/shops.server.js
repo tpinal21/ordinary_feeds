@@ -40,6 +40,7 @@ export function toFeed({ id, page, type, label, settings, gallery }) {
               media_url: m.media_url,
               // The post dialog shows these.
               caption: m.caption,
+              like_count: m.like_count,
               permalink: m.permalink,
               products: m.products,
               thumbnail_url: m.thumbnail_url,
@@ -64,6 +65,7 @@ export async function getShopDetails(shopDomain) {
         // include `access_token`.
         "instagram_account.status",
         "instagram_account.username",
+        "instagram_account.profile_picture_url",
         "instagram_account.name",
         "instagram_account.media_count",
         "instagram_account.followers_count",

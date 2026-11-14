@@ -5,6 +5,7 @@ import { delay, enter } from "app/lib/animations";
 import { apiFetch } from "app/lib/api-client";
 import {
   APP_SETTINGS_DEFAULTS,
+  APP_SETTINGS_KEY,
   CLICK_ACTIONS,
   POST_TYPES,
 } from "app/lib/app-settings";
@@ -73,6 +74,8 @@ export default function Settings() {
     shopify.toast.show(successMessage);
     // Feed cards show whether the storefront switch hides them.
     mutate(THEME_BLOCKS_KEY);
+    // Feed previews follow the post-click setting.
+    mutate(APP_SETTINGS_KEY, res, { revalidate: false });
     // Reset onto the saved values so they become the new defaults — that's
     // what clears the save bar.
     reset(toFormValues(res.data), { keepDirty: false });

@@ -17,6 +17,9 @@ export const POST_TYPES = [
   { value: "CAROUSEL_ALBUM", label: "Carousel posts" },
 ];
 
+// SWR key for the shop's settings (GET /api/settings).
+export const APP_SETTINGS_KEY = "/api/settings";
+
 export const CLICK_ACTIONS = [
   { value: "popup", label: "Open the post in a popup" },
   { value: "instagram", label: "Open the post on Instagram" },

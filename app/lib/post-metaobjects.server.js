@@ -41,6 +41,8 @@ const toFields = (media) => {
     thumbnail_url: media.thumbnail_url,
     permalink: media.permalink,
     caption: media.caption,
+    // Exact count; the storefront formats it (e.g. 30.4K).
+    like_count: Number.isInteger(media.like_count) ? media.like_count : null,
     products: JSON.stringify(
       (media.products ?? []).map((p) => p.product_id.id),
     ),
@@ -126,46 +128,58 @@ const buildDelete = (count) => {
   }`;
 };
 
-// Deletes the app-owned metaobjects of `type` (e.g. "post", "gallery") whose
-// handles are derived from these Directus ids. Ids that never got a
-// metaobject are skipped. Throws if Shopify rejects any delete.
-export async function deleteMetaobjects(admin, type, directusIds) {
-  const errors = [];
+// Finds the app-owned metaobjects of `type` (e.g. "post") whose handles are
+// derived from these Directus ids. Returns `{ [directus id]: metaobject GID }`;
+// ids that never got a metaobject are left out. Throws on GraphQL errors.
+export async function lookupMetaobjectIds(admin, type, directusIds) {
+  const found = {};
 
   for (let start = 0; start < directusIds.length; start += CHUNK_SIZE) {
     const chunk = directusIds.slice(start, start + CHUNK_SIZE);
-
-    const lookupVars = Object.fromEntries(
+    const variables = Object.fromEntries(
       chunk.map((id, i) => [
         `handle${i}`,
         { type: `$app:${type}`, handle: postHandle(id) },
       ]),
     );
-    const lookup = await (
-      await admin.graphql(buildLookup(chunk.length), {
-        variables: lookupVars,
-      })
+    const { data, errors } = await (
+      await admin.graphql(buildLookup(chunk.length), { variables })
     ).json();
-    if (lookup.errors?.length) {
-      errors.push(...lookup.errors.map((e) => e.message));
-      continue;
+    if (errors?.length) {
+      throw new Error(
+        `${type} metaobject lookup failed: ${errors.map((e) => e.message).join("; ")}`,
+      );
     }
+    chunk.forEach((id, i) => {
+      const gid = data?.[`entry${i}`]?.id;
+      if (gid) found[id] = gid;
+    });
+  }
 
-    const ids = chunk
-      .map((_, i) => lookup.data?.[`entry${i}`]?.id)
-      .filter(Boolean);
-    if (!ids.length) continue;
+  return found;
+}
 
+// Deletes the app-owned metaobjects of `type` (e.g. "post", "gallery") whose
+// handles are derived from these Directus ids. Ids that never got a
+// metaobject are skipped. Throws if Shopify rejects any delete.
+export async function deleteMetaobjects(admin, type, directusIds) {
+  const errors = [];
+  const ids = Object.values(
+    await lookupMetaobjectIds(admin, type, directusIds),
+  );
+
+  for (let start = 0; start < ids.length; start += CHUNK_SIZE) {
+    const chunk = ids.slice(start, start + CHUNK_SIZE);
     const res = await (
-      await admin.graphql(buildDelete(ids.length), {
-        variables: Object.fromEntries(ids.map((id, i) => [`id${i}`, id])),
+      await admin.graphql(buildDelete(chunk.length), {
+        variables: Object.fromEntries(chunk.map((id, i) => [`id${i}`, id])),
       })
     ).json();
     if (res.errors?.length) {
       errors.push(...res.errors.map((e) => e.message));
       continue;
     }
-    ids.forEach((id, i) => {
+    chunk.forEach((id, i) => {
       for (const e of res.data?.[`entry${i}`]?.userErrors ?? []) {
         errors.push(`${id}: ${e.message}`);
       }

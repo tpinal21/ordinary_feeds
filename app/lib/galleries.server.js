@@ -8,6 +8,7 @@ export const GALLERY_FIELDS = [
   "id",
   "title",
   "type",
+  "post_limit",
 
   "ig_media.id",
   "ig_media.instagram_media_id.id",
@@ -19,6 +20,7 @@ export const GALLERY_FIELDS = [
   // only sends MEDIA_FIELDS.
   "ig_media.instagram_media_id.caption",
   "ig_media.instagram_media_id.permalink",
+  "ig_media.instagram_media_id.like_count",
   ...MEDIA_PRODUCT_FIELDS.map((f) => `ig_media.instagram_media_id.${f}`),
   "ig_media.order",
 ];
@@ -31,6 +33,7 @@ const MEDIA_FIELDS = [
   "thumbnail_url",
   "permalink",
   "caption",
+  "like_count",
   "timestamp",
   "last_synced_at",
 ];
@@ -70,7 +73,7 @@ export const readShopAccount = async (shopDomain) => {
       filter: {
         _and: [{ shop: { _eq: shopDomain } }, { status: { _eq: "CONNECTED" } }],
       },
-      fields: ["id", "username", "shop.shop_handle"],
+      fields: ["id", "username", "profile_picture_url", "shop.shop_handle"],
       limit: 1,
     }),
   );
@@ -86,6 +89,20 @@ export const ownMedia = (media, account) => {
     return typeof id === "string" && id.endsWith(suffix);
   });
 };
+
+export const GALLERY_TYPES = ["AUTO", "MANUAL", "PRODUCT"];
+export const POST_LIMITS = [10, 15, 20];
+export const DEFAULT_POST_LIMIT = 10;
+
+// Only the limits the UI offers; anything else falls back to the default.
+export const toPostLimit = (value) => {
+  const limit = parseInt(value, 10);
+  return POST_LIMITS.includes(limit) ? limit : DEFAULT_POST_LIMIT;
+};
+
+// PRODUCT galleries pick their posts per product page from the product's
+// tags, so they never store a post list of their own.
+export const storesMedia = (type) => type !== "PRODUCT";
 
 export const missingAccount = () =>
   Response.json(
@@ -104,10 +121,11 @@ export const toGallery = ({ ig_media, ...gallery }) => ({
 
 // The ids come from the client and the writes run with an admin token, so
 // every mutation has to prove the gallery belongs to the calling shop first.
+// Resolves to the gallery's `{ id, type }` when it's this shop's, else null.
 export const ownsGallery = async (shopDomain, galleryId) => {
   const [existing] = await directus.request(
     readItems(GALLERIES, {
-      fields: ["id"],
+      fields: ["id", "type"],
       filter: {
         _and: [{ id: { _eq: galleryId } }, { shop: { _eq: shopDomain } }],
       },
@@ -115,7 +133,7 @@ export const ownsGallery = async (shopDomain, galleryId) => {
     }),
   );
 
-  return !!existing;
+  return existing ?? null;
 };
 
 export const galleryNotFound = () =>

@@ -1,6 +1,11 @@
 import AppBridgeForm from "app/components/app-bridge-form";
-import { FeedPreview } from "app/components/feed-preview";
+import { FeedPreview, PREVIEW_PLACEHOLDERS } from "app/components/feed-preview";
 import FeedSettingsForm from "app/components/forms/feed-settings-form";
+import {
+  ProductPreviewBar,
+  usePreviewProduct,
+  useTaggedPosts,
+} from "app/components/product-preview";
 import { ResizablePreview } from "app/components/resizable-preview";
 import { useGalleries } from "app/hooks/useGalleries";
 import { useMutation } from "app/hooks/useMutation";
@@ -11,18 +16,17 @@ import { requestAppWindowClose } from "app/lib/app-window";
 import {
   FEEDS_KEY,
   FEED_PAGE_CODES,
+  FEED_PAGES,
   FEED_TYPES,
   SUPPORTED_FEED_TYPES,
   feedCreateWindowId,
+  galleryAllowedOnPage,
 } from "app/lib/feeds";
 import { authenticate } from "app/shopify.server";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useLoaderData } from "react-router";
-
-// Placeholder tiles so the preview isn't empty before a gallery resolves.
-const PREVIEW_PLACEHOLDERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export async function loader({ request }) {
   const { admin } = await authenticate.admin(request);
@@ -62,7 +66,22 @@ export default function CreateFeed() {
   // the form takes over from there.
   const gallery =
     galleries?.find((g) => g.id === galleryId) ??
-    galleries?.find((g) => g.type === "AUTO");
+    galleries?.find((g) => g.type === "AUTO") ??
+    galleries?.find((g) => galleryAllowedOnPage(g.type, FEED_PAGES[page]));
+
+  // A PRODUCT gallery's posts depend on the product page it's shown on, so
+  // the preview needs a product to show anything real.
+  const isProductGallery = gallery?.type === "PRODUCT";
+  const previewProduct = usePreviewProduct();
+  const tagged = useTaggedPosts(
+    isProductGallery ? previewProduct.product : null,
+    gallery?.post_limit ?? 20,
+  );
+  const previewMedia = isProductGallery
+    ? tagged.posts.length
+      ? tagged.posts
+      : PREVIEW_PLACEHOLDERS
+    : (gallery?.media ?? PREVIEW_PLACEHOLDERS);
 
   useEffect(() => {
     if (gallery && gallery.id !== galleryId) {
@@ -127,10 +146,17 @@ export default function CreateFeed() {
         Create
       </s-button>
       <div className="flex flex-col gap-2">
+        {isProductGallery && (
+          <ProductPreviewBar
+            product={previewProduct.product}
+            onChoose={previewProduct.choose}
+            tagged={tagged}
+          />
+        )}
         <ResizablePreview>
           <FeedPreview
             type={type}
-            media={gallery?.media ?? PREVIEW_PLACEHOLDERS}
+            media={previewMedia}
             settings={formValues.settings}
           />
         </ResizablePreview>
@@ -140,7 +166,7 @@ export default function CreateFeed() {
           onSubmit={handleFormSubmit}
           showSaveBar={false}
         >
-          <FeedSettingsForm type={type} />
+          <FeedSettingsForm type={type} page={FEED_PAGES[page]} />
         </AppBridgeForm>
       </div>
     </s-page>

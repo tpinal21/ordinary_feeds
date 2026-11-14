@@ -87,6 +87,11 @@
   cursor: pointer;
 }
 
+/* "Do nothing" on click: don't promise a click. */
+.insta-carousel[data-click-action="none"] .insta-carousel__media {
+  cursor: default;
+}
+
 .insta-carousel__video {
   display: block;
   width: 100%;
@@ -119,8 +124,9 @@
 
 .insta-carousel__mute {
   position: absolute;
+  z-index: 1;
+  top: 6px;
   right: 6px;
-  bottom: 6px;
   width: 24px;
   height: 24px;
   padding: 0;
@@ -139,6 +145,131 @@
 
 .insta-carousel__media:hover .insta-carousel__mute {
   opacity: 1;
+}
+
+/* Tagged product bar along the bottom of the card, shown on hover. Mirrors
+   the showTagProducts bar in app/components/post-card.jsx. */
+.insta-carousel__product {
+  position: absolute;
+  z-index: 1;
+  left: 6px;
+  right: 6px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  color: #111;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 150ms ease, transform 150ms ease;
+  cursor: default;
+}
+
+.insta-carousel__media:hover .insta-carousel__product,
+.insta-carousel__product:focus-within {
+  opacity: 1;
+  transform: none;
+}
+
+.insta-carousel__product-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.insta-carousel__product-image {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #f5f5f5;
+}
+
+.insta-carousel__product-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.insta-carousel__product-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.insta-carousel__product-title {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.insta-carousel__product-link:hover .insta-carousel__product-title {
+  text-decoration: underline;
+}
+
+.insta-carousel__product-price {
+  font-size: 11px;
+  color: #555;
+}
+
+.insta-carousel__product-more {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+}
+
+.insta-carousel__product-add {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.insta-carousel__product-add:hover {
+  transform: scale(1.06);
+}
+
+.insta-carousel__product-add:disabled {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
+}
+
+.insta-carousel__product-add svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* No hover on touch screens: keep the mute button and product bar visible. */
+@media (hover: none) {
+  .insta-carousel__mute,
+  .insta-carousel__product {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .insta-carousel__icon {
@@ -435,6 +566,9 @@
 }
 
 .insta-dialog__avatar {
+  position: relative;
+  flex: none;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -447,6 +581,14 @@
 .insta-dialog__avatar svg {
   width: 16px;
   height: 16px;
+}
+
+.insta-dialog__avatar-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .insta-dialog__username {
@@ -510,6 +652,7 @@
 }
 
 .insta-dialog__product {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -551,6 +694,8 @@
 }
 
 .insta-dialog__product-title {
+  color: inherit;
+  text-decoration: none;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -588,6 +733,57 @@
 .insta-dialog__product-soldout {
   font-size: 12px;
   opacity: 0.7;
+}
+
+/* The title link covers the whole card, so the card stays one click target. */
+.insta-dialog__product-title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.insta-dialog__product-title:focus-visible {
+  outline: none;
+}
+
+.insta-dialog__product:focus-within {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Sits above the stretched link so it gets its own clicks. */
+.insta-dialog__product-add {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.insta-dialog__product-add:hover {
+  transform: scale(1.06);
+}
+
+.insta-dialog__product-add:disabled {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
+}
+
+.insta-dialog__product-add svg {
+  width: 18px;
+  height: 18px;
 }
 
 .insta-dialog__product-arrow {
@@ -663,6 +859,28 @@
   display: none;
 }
 
+.insta-dialog__likes {
+  cursor: default;
+}
+
+.insta-dialog__likes-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+}
+
+.insta-dialog__likes-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.insta-dialog__likes-count {
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .insta-dialog__action-label {
   font-size: 11px;
   opacity: 0.8;
@@ -686,9 +904,27 @@
   height: 40px;
 }
 
-/* Narrow screens: caption over the video, actions over its right edge. */
+/* Narrow screens: side info and prev/next hidden, the video fills the width,
+   caption and actions sit over it. */
 @media (max-width: 767px) {
-  .insta-dialog__info--side {
+  /* Side columns collapse (and no gaps) so the stage gets the full width.
+     The single row is only as tall as the stage and centred vertically. */
+  .insta-dialog__layout {
+    grid-template-columns: 0 minmax(0, 1fr) 0;
+    grid-template-rows: auto;
+    align-content: center;
+    align-items: center;
+    justify-items: center;
+    gap: 0;
+  }
+
+  /* Explicit row, or auto-placement would push it below the actions. */
+  .insta-dialog__stage {
+    grid-row: 1;
+  }
+
+  .insta-dialog__info--side,
+  .insta-dialog__nav {
     display: none;
   }
 
@@ -698,14 +934,19 @@
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 64px 72px 16px 16px;
+    padding: 64px 88px 16px 16px;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   }
 
+  /* Shares the stage's grid cell, pinned over its bottom-right corner. */
   .insta-dialog__actions {
-    position: absolute;
-    right: 16px;
-    bottom: 32px;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    justify-self: end;
+    position: relative;
+    z-index: 1;
+    margin: 0 16px 24px 0;
   }
 
   .insta-dialog__info--overlay .insta-dialog__product-list {

@@ -51,7 +51,17 @@
     endfor
   endif
 
-  assign posts = feed.gallery.value.posts.value
+  # PRODUCT galleries hold no posts of their own: they show the posts the
+  # current product is tagged in, kept on the product by the app
+  # (app/lib/product-post-metafields.server.js). Off a product page
+  # `product` is nil, so they render nothing.
+  assign gallery = feed.gallery.value
+  if gallery.type.value == 'PRODUCT'
+    assign posts = product.metafields["$app"].instagram_posts.value
+  else
+    assign posts = gallery.posts.value
+  endif
+  assign post_limit = gallery.post_limit.value | default: 20
 
   # Per-feed settings. Fallbacks mirror CAROUSEL_FEED_DEFAULTS in
   # app/lib/feeds.js; `allow_false` keeps a stored `false` from being swapped
@@ -66,9 +76,14 @@
   assign cs_radius = carousel.border_radius | default: 8, allow_false: true
   # Written by the app when the feed is saved; shown in the post dialog.
   assign ig_username = carousel.instagram_username
+  assign ig_avatar = carousel.instagram_profile_picture
 
   # App-wide settings (the Settings page).
   assign app_settings = shop.metafields["$app"].settings.value
+
+  # Settings page → Post clicks: popup | instagram | product | none.
+  # Falls back like CLICK_ACTIONS' default in app/lib/app-settings.js.
+  assign click_action = app_settings.click.action | default: 'popup'
 -%}
 
 {% if feed == blank or posts == blank or posts.size == 0 %}
@@ -99,7 +114,12 @@
           here yet (check the feed metaobject type and its storefront access).
         {% endif %}
       {% else %}
-        The selected feed has no posts yet.
+        {% if gallery.type.value == 'PRODUCT' %}
+          This product isn't tagged in any Instagram post yet. Tag it from
+          Manage posts in the app.
+        {% else %}
+          The selected feed has no posts yet.
+        {% endif %}
       {% endif %}
     </p>
   {% endif %}
@@ -115,16 +135,25 @@
     data-auto-scroll="{{ cs_auto_scroll }}"
     data-speed="{{ cs_speed }}"
     data-media-auto-play="{{ cs_media_auto_play }}"
+    data-click-action="{{ click_action | escape }}"
     style="--insta-per-view: {{ cs_per_view }};--insta-gap: {{ cs_gap }}px;--insta-radius: {{ cs_radius }}px"
     {{ block.shopify_attributes }}
   >
     <div class="insta-carousel__viewport">
       <div class="insta-carousel__container">
-        {% for post in posts %}
+        {% for post in posts limit: post_limit %}
           {%- liquid
             assign media_url = post.media_url.value
             assign poster = post.thumbnail_url.value | default: media_url
             assign alt_text = post.caption.value | default: 'Instagram post' | strip_html | truncate: 80
+
+            # The tagged products list doesn't answer `.first` (it comes back
+            # empty), but it iterates fine, so take the first one with a loop.
+            assign card_products = post.products.value
+            assign card_product = nil
+            for tagged_product in card_products limit: 1
+              assign card_product = tagged_product
+            endfor
           -%}
           <div
             class="insta-carousel__slide"
@@ -134,6 +163,8 @@
             data-src="{{ media_url | escape }}"
             data-poster="{{ poster | escape }}"
             data-permalink="{{ post.permalink.value | escape }}"
+            data-likes="{{ post.like_count.value }}"
+            data-product-url="{{ card_product.url }}"
           >
             <div class="insta-carousel__media">
               <video
@@ -158,6 +189,51 @@
                   <path fill="currentColor" d="M3 9h4l5-5v16l-5-5H3V9zm18 3a9.003 9.003 0 0 1-7 8.777V18.71a7.003 7.003 0 0 0 0-13.42V3.223c4.008.91 7 4.494 7 8.777zm-4 0a5.001 5.001 0 0 1-3 4.584V7.416c1.766.772 3 2.534 3 4.584z"/>
                 </svg>
               </button>
+
+              {%- comment -%}
+                The first tagged product, shown on hover. The rest are in the
+                post dialog; "+N" says how many more there are.
+              {%- endcomment -%}
+              {% if card_product %}
+                <div class="insta-carousel__product">
+                  <a class="insta-carousel__product-link" href="{{ card_product.url }}" data-insta-product-link>
+                    <span class="insta-carousel__product-image">
+                      {% if card_product.featured_image %}
+                        <img
+                          src="{{ card_product.featured_image | image_url: width: 96 }}"
+                          alt=""
+                          width="32"
+                          height="32"
+                          loading="lazy"
+                        >
+                      {% endif %}
+                    </span>
+                    <span class="insta-carousel__product-info">
+                      <span class="insta-carousel__product-title">{{ card_product.title | escape }}</span>
+                      <span class="insta-carousel__product-price">
+                        {%- if card_product.available -%}
+                          {{- card_product.price | money -}}
+                        {%- else -%}
+                          Sold out
+                        {%- endif -%}
+                      </span>
+                    </span>
+                  </a>
+                  {% if card_products.size > 1 %}
+                    <span class="insta-carousel__product-more">+{{ card_products.size | minus: 1 }}</span>
+                  {% endif %}
+                  {% if card_product.available %}
+                    <button
+                      type="button"
+                      class="insta-carousel__product-add"
+                      data-insta-add-to-cart="{{ card_product.selected_or_first_available_variant.id }}"
+                      aria-label="Add {{ card_product.title | escape }} to cart"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                    </button>
+                  {% endif %}
+                </div>
+              {% endif %}
             </div>
 
             {%- comment -%}
@@ -180,7 +256,11 @@
                   </span>
                   <div class="insta-dialog__product-list">
                     {% for product in tagged %}
-                      <a class="insta-dialog__product" href="{{ product.url }}">
+                      {%- comment -%}
+                        A <div>, not an <a>: a button can't sit inside a link.
+                        The title link is stretched over the whole card instead.
+                      {%- endcomment -%}
+                      <div class="insta-dialog__product">
                         <span class="insta-dialog__product-image">
                           {% if product.featured_image %}
                             <img
@@ -193,7 +273,7 @@
                           {% endif %}
                         </span>
                         <span class="insta-dialog__product-info">
-                          <span class="insta-dialog__product-title">{{ product.title | escape }}</span>
+                          <a class="insta-dialog__product-title" href="{{ product.url }}">{{ product.title | escape }}</a>
                           {%- comment -%}
                             Live from Shopify: `price` is the cheapest variant,
                             hence "From" when variants differ.
@@ -213,8 +293,23 @@
                             {%- endunless -%}
                           </span>
                         </span>
-                        <svg class="insta-dialog__product-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-                      </a>
+                        {%- comment -%}
+                          Straight to cart only when there's nothing to choose;
+                          products with options go to their page via the card.
+                        {%- endcomment -%}
+                        {% if product.available %}
+                          <button
+                            type="button"
+                            class="insta-dialog__product-add"
+                            data-insta-add-to-cart="{{ product.selected_or_first_available_variant.id }}"
+                            aria-label="Add {{ product.title | escape }} to cart"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                          </button>
+                        {% else %}
+                          <svg class="insta-dialog__product-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                        {% endif %}
+                      </div>
                     {% endfor %}
                   </div>
                 </div>
@@ -246,6 +341,11 @@
       (app/components/post-dialog.jsx). A native <dialog> opened with
       showModal() sits in the top layer, above any theme stacking context.
     {%- endcomment -%}
+    {%- comment -%}
+      Rendered for every action but "none": the Instagram and product actions
+      fall back to it for posts with nowhere else to go.
+    {%- endcomment -%}
+    {% unless click_action == 'none' %}
     <dialog class="insta-dialog" data-insta-dialog aria-label="Instagram post">
       <div class="insta-dialog__layout">
         <div class="insta-dialog__info insta-dialog__info--side" data-insta-info>
@@ -258,6 +358,22 @@
             >
               <span class="insta-dialog__avatar">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3"/></svg>
+                {%- comment -%}
+                  Instagram's profile picture URL expires after a few days;
+                  if it no longer loads, the logo badge underneath shows.
+                {%- endcomment -%}
+                {% if ig_avatar != blank %}
+                  <img
+                    class="insta-dialog__avatar-image"
+                    src="{{ ig_avatar | escape }}"
+                    alt=""
+                    width="32"
+                    height="32"
+                    referrerpolicy="no-referrer"
+                    loading="lazy"
+                    onerror="this.remove()"
+                  >
+                {% endif %}
               </span>
               <span class="insta-dialog__username">{{ ig_username | escape }}</span>
             </a>
@@ -289,6 +405,13 @@
         </div>
 
         <div class="insta-dialog__actions">
+          {%- comment -%} Display only; carousel.js fills and hides it per post. {%- endcomment -%}
+          <div class="insta-dialog__action insta-dialog__likes" data-insta-dialog-likes hidden>
+            <span class="insta-dialog__likes-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </span>
+            <span class="insta-dialog__likes-count" data-insta-dialog-likes-count></span>
+          </div>
           <a class="insta-dialog__action" data-insta-dialog-permalink target="_blank" rel="noopener" hidden>
             <span class="insta-dialog__round">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3"/></svg>
@@ -317,6 +440,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
     </dialog>
+    {% endunless %}
   </div>
 {% endif %}
 

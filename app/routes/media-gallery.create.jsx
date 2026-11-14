@@ -1,6 +1,7 @@
 import AppBridgeForm from "app/components/app-bridge-form";
 import { MediaListModal } from "app/components/media-list-modal";
 import PostCard from "app/components/post-card";
+import { ProductPreview } from "app/components/product-preview";
 import { useMutation } from "app/hooks/useMutation";
 import { delay, enter } from "app/lib/animations";
 import { apiFetch } from "app/lib/api-client";
@@ -14,27 +15,34 @@ import { useNavigate } from "react-router";
 export const GALLERY_TYPES = [
   {
     type: "AUTO",
+    defaultTitle: "Latest posts",
     description:
       "Automatically shows your most recent Instagram posts. The gallery keeps itself up to date as you publish new content, no manual work needed.",
   },
   {
     type: "MANUAL",
+    defaultTitle: "Handpicked",
     description:
       "Pick exactly which posts to show and drag them into the order you want.",
   },
   {
     type: "PRODUCT",
+    defaultTitle: "Tagged in posts",
     description:
-      "Matches posts to each product automatically. On a product page, it shows only the posts where that product is tagged, perfect for adding social proof next to the buy button.",
+      "On a product page, it shows only the posts where that product is tagged, perfect for adding social proof next to the buy button.",
   },
 ];
+
+const DEFAULT_TITLES = new Set(GALLERY_TYPES.map((g) => g.defaultTitle));
+const defaultTitleFor = (type) =>
+  GALLERY_TYPES.find((g) => g.type === type)?.defaultTitle ?? "";
 
 export default function MediaGallery() {
   const navigate = useNavigate();
 
   const formMethods = useForm({
     defaultValues: {
-      title: "Handpicked ",
+      title: defaultTitleFor("MANUAL"),
       type: "MANUAL",
       post_limit: "10",
       media: [],
@@ -46,6 +54,7 @@ export default function MediaGallery() {
     control,
     reset,
     getValues,
+    setValue,
     formState: { errors },
   } = formMethods;
 
@@ -75,11 +84,13 @@ export default function MediaGallery() {
     },
   );
 
-  const handleSave = ({ title, type, media }) =>
+  const handleSave = ({ title, type, post_limit, media }) =>
     createGallery({
       title: title.trim(),
       type,
-      media: media?.map(({ field_id, ...m }) => m),
+      post_limit: Number(post_limit),
+      // PRODUCT galleries pick their posts per product page at render time.
+      media: type === "PRODUCT" ? [] : media?.map(({ field_id, ...m }) => m),
     });
 
   return (
@@ -154,7 +165,18 @@ export default function MediaGallery() {
                                 name={field.name}
                                 value={g.type}
                                 checked={field.value == g.type}
-                                onChange={(e) => field.onChange(g.type)}
+                                onChange={() => {
+                                  field.onChange(g.type);
+                                  // Swap in the new type's default title, unless the
+                                  // merchant already wrote their own.
+                                  const title = getValues("title")?.trim();
+                                  if (!title || DEFAULT_TITLES.has(title)) {
+                                    setValue("title", g.defaultTitle, {
+                                      shouldDirty: true,
+                                      shouldValidate: true,
+                                    });
+                                  }
+                                }}
                               />
                               {g.type}
                             </label>
@@ -193,69 +215,75 @@ export default function MediaGallery() {
               </s-section>
             </div>
             <div className={`w-full ${enter}`} style={delay(200)}>
-              <s-box
-                background="subdued"
-                border="base"
-                borderColor="subdued"
-                borderRadius="large"
-              >
-                <div className="px-4 py-3 inline-flex gap-2">
-                  <s-heading>Included posts:</s-heading>
-                  <s-badge>
-                    {fields?.length}/{formValues.post_limit}
-                  </s-badge>
-                </div>
+              {formValues.type === "PRODUCT" ? (
+                <ProductPreview limit={formValues.post_limit} />
+              ) : (
+                <s-box
+                  background="subdued"
+                  border="base"
+                  borderColor="subdued"
+                  borderRadius="large-200"
+                >
+                  <div className="px-4 py-3 inline-flex gap-2">
+                    <s-heading>Included posts:</s-heading>
+                    <s-badge>
+                      {fields?.length}/{formValues.post_limit}
+                    </s-badge>
+                  </div>
 
-                <s-section>
-                  {fields?.length ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-                      {fields?.map((media, index) => (
-                        <DraggableMedia
-                          key={media.field_id}
-                          id={media.field_id}
-                          index={index}
-                          move={move}
-                        >
-                          <PostCard
-                            post={media}
-                            showDeleteButton
-                            onDelete={() => remove(index)}
-                          />
-                        </DraggableMedia>
-                      ))}
-                      {fields.length < formValues.post_limit && (
-                        <div className="flex flex-col col-span-full justify-center items-center gap-3 p-4">
-                          <s-heading>Add more media</s-heading>
-                          <s-text>Select media to add to this gallery.</s-text>
-                          <div className="mt-2">
-                            <MediaListModal
-                              selected={fields}
-                              onSubmit={(selectedMedia) =>
-                                replace(selectedMedia)
-                              }
-                            >
-                              Select media
-                            </MediaListModal>
+                  <s-section>
+                    {fields?.length ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                        {fields?.map((media, index) => (
+                          <DraggableMedia
+                            key={media.field_id}
+                            id={media.field_id}
+                            index={index}
+                            move={move}
+                          >
+                            <PostCard
+                              post={media}
+                              showDeleteButton
+                              onDelete={() => remove(index)}
+                            />
+                          </DraggableMedia>
+                        ))}
+                        {fields.length < formValues.post_limit && (
+                          <div className="flex flex-col col-span-full justify-center items-center gap-3 p-4">
+                            <s-heading>Add more media</s-heading>
+                            <s-text>
+                              Select media to add to this gallery.
+                            </s-text>
+                            <div className="mt-2">
+                              <MediaListModal
+                                selected={fields}
+                                onSubmit={(selectedMedia) =>
+                                  replace(selectedMedia)
+                                }
+                              >
+                                Select media
+                              </MediaListModal>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col justify-center items-center gap-3 p-4">
-                      <s-heading>No media added</s-heading>
-                      <s-text>Select media to add to this gallery.</s-text>
-                      <div className="mt-2">
-                        <MediaListModal
-                          selected={fields}
-                          onSubmit={(selectedMedia) => replace(selectedMedia)}
-                        >
-                          Select media
-                        </MediaListModal>
+                        )}
                       </div>
-                    </div>
-                  )}
-                </s-section>
-              </s-box>
+                    ) : (
+                      <div className="flex flex-col justify-center items-center gap-3 p-4">
+                        <s-heading>No media added</s-heading>
+                        <s-text>Select media to add to this gallery.</s-text>
+                        <div className="mt-2">
+                          <MediaListModal
+                            selected={fields}
+                            onSubmit={(selectedMedia) => replace(selectedMedia)}
+                          >
+                            Select media
+                          </MediaListModal>
+                        </div>
+                      </div>
+                    )}
+                  </s-section>
+                </s-box>
+              )}
             </div>
           </div>
         </AppBridgeForm>

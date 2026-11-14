@@ -13,11 +13,15 @@ import {
   CarouselContent,
   CarouselItem,
 } from "app/components/ui/carousel";
+import { useFetch } from "app/hooks/useFetch";
+import { apiFetch } from "app/lib/api-client";
+import { APP_SETTINGS_KEY } from "app/lib/app-settings";
 import { cn } from "app/lib/utils";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
   ChevronUpIcon,
+  HeartIcon,
   PlayIcon,
   SendIcon,
   ShoppingBagIcon,
@@ -26,11 +30,63 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useOutletContext } from "react-router";
 
-// The connected account's username, when rendered inside the app's routes.
-export const useInstagramUsername = () =>
+// The connected Instagram account, when rendered inside the app's routes.
+const useInstagramAccount = () =>
   useOutletContext()?.shopDetails?.instagram_account?.find(
     (acc) => acc.status == "CONNECTED",
-  )?.username;
+  );
+
+export const useInstagramUsername = () => useInstagramAccount()?.username;
+
+// The account's profile picture over the Instagram-gradient badge. Instagram
+// serves it from a signed CDN URL that expires after a few days, so when it
+// fails to load the badge with the Instagram logo shows instead.
+const Avatar = () => {
+  const src = useInstagramAccount()?.profile_picture_url;
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-tr from-amber-400 via-pink-500 to-purple-600">
+      <InstagramLogo className="size-4" />
+      {src && !failed && (
+        <img
+          src={src}
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          className="absolute inset-0 size-full object-cover"
+        />
+      )}
+    </span>
+  );
+};
+
+// What clicking a post in a feed preview does, from Settings → Post clicks
+// (`click.action`), mirroring the theme extension's carousel.js: each action
+// falls back to the next one the post supports, product -> Instagram ->
+// popup. In the admin, "product" opens the product in the Shopify admin (the
+// preview has no storefront URL for it). Returns `(index) => void`, where
+// `openPost(index)` opens the PostDialog.
+export function usePostClick(posts, openPost) {
+  const { data } = useFetch(APP_SETTINGS_KEY, ({ key }) => apiFetch(key));
+  const action = data?.data?.click?.action ?? "popup";
+
+  return (index) => {
+    if (action === "none") return;
+
+    const post = posts[index];
+    const product = taggedProducts(post)[0];
+    if (action === "product" && product && adminProductUrl(product)) {
+      window.open(adminProductUrl(product), "_blank", "noopener");
+      return;
+    }
+    if ((action === "product" || action === "instagram") && post?.permalink) {
+      window.open(post.permalink, "_blank", "noopener");
+      return;
+    }
+    openPost(index);
+  };
+}
 
 // Round, translucent control used for every button over the dark backdrop.
 const roundButton =
@@ -138,9 +194,7 @@ const PostInfo = ({ post, username, row, className }) => {
           rel="noopener noreferrer"
           className="flex w-fit items-center gap-2 hover:underline"
         >
-          <span className="flex size-8 items-center justify-center rounded-full bg-linear-to-tr from-amber-400 via-pink-500 to-purple-600">
-            <InstagramLogo className="size-4" />
-          </span>
+          <Avatar />
           <span className="text-sm font-semibold">{username}</span>
         </a>
       )}
@@ -172,6 +226,30 @@ const ActionButton = ({ label, children, ...props }) => (
       {children}
     </button>
     <span className="text-[11px] text-white/80">{label}</span>
+  </div>
+);
+
+// 30412 -> "30.4K", 3048211 -> "3M": stored exact, shortened for display.
+const formatCount = (n) =>
+  new Intl.NumberFormat("en", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(n);
+
+// Instagram's like count. Display only: liking happens on Instagram. Left
+// out when the owner hides likes (no count stored).
+const LikeCount = ({ count }) => (
+  <div className="flex flex-col items-center gap-1 text-white">
+    <span
+      className="flex size-11 items-center justify-center"
+      aria-hidden="true"
+    >
+      <HeartIcon className="size-6" />
+    </span>
+    <span className="text-xs font-medium">
+      {formatCount(count)}
+      <span className="sr-only"> likes</span>
+    </span>
   </div>
 );
 
@@ -381,6 +459,9 @@ export function PostDialog({ posts, index, onIndexChange, username }) {
               </div>
 
               <div className="absolute right-4 bottom-8 flex flex-col gap-4 md:static md:justify-self-start md:pb-2">
+                {Number.isFinite(post.like_count) && (
+                  <LikeCount count={post.like_count} />
+                )}
                 {post.permalink && (
                   <ActionButton
                     label="Instagram"

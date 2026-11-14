@@ -2,18 +2,22 @@ import { deleteItem, readItem, updateItem } from "@directus/sdk";
 import directus from "app/directus.server";
 import { FEEDS, SHOPS } from "app/lib/constants";
 import { syncFeedMetaobject } from "app/lib/feed-metaobjects.server";
+import { galleryAllowedOnPage } from "app/lib/feeds";
 import { galleryNotFound, ownsGallery } from "app/lib/galleries.server";
-import { readJsonBody } from "app/lib/http.server";
+import { badRequest, readJsonBody } from "app/lib/http.server";
 import { deleteMetaobjects } from "app/lib/post-metaobjects.server";
 import { authenticate } from "../shopify.server";
 
 // The feed id comes from the URL and the writes run with an admin token, so
 // check the feed actually belongs to this shop before touching it.
+// Resolves to the shop's feed `{ id, page }` with this id, or null.
 async function ownsFeed(shopDomain, feedId) {
   const shop = await directus.request(
-    readItem(SHOPS, shopDomain, { fields: ["feeds.id"] }),
+    readItem(SHOPS, shopDomain, { fields: ["feeds.id", "feeds.page"] }),
   );
-  return !!shop?.feeds?.some((feed) => String(feed.id) === String(feedId));
+  return (
+    shop?.feeds?.find((feed) => String(feed.id) === String(feedId)) ?? null
+  );
 }
 
 const feedNotFound = () =>
@@ -34,11 +38,17 @@ export async function action({ request, params }) {
   const { gallery, settings } = payload;
 
   try {
-    if (!(await ownsFeed(shopDomain, params.id))) return feedNotFound();
+    const existing = await ownsFeed(shopDomain, params.id);
+    if (!existing) return feedNotFound();
 
-    // The gallery id comes from the client; it has to be this shop's.
-    if (gallery?.id && !(await ownsGallery(shopDomain, gallery.id))) {
-      return galleryNotFound();
+    // The gallery id comes from the client; it has to be this shop's, and
+    // able to render on the feed's page.
+    if (gallery?.id) {
+      const owned = await ownsGallery(shopDomain, gallery.id);
+      if (!owned) return galleryNotFound();
+      if (!galleryAllowedOnPage(owned.type, existing.page)) {
+        return badRequest("gallery_not_allowed_on_page");
+      }
     }
 
     const feed = await directus.request(

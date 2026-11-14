@@ -3,14 +3,21 @@ import directus from "app/directus.server";
 import { GALLERIES } from "app/lib/constants";
 import {
   GALLERY_FIELDS,
+  GALLERY_TYPES,
   missingAccount,
   ownMedia,
   readShopAccount,
   serverError,
+  storesMedia,
   toGallery,
   toIgMedia,
+  toPostLimit,
 } from "app/lib/galleries.server";
 import { syncGalleryMetaobject } from "app/lib/gallery-metaobjects.server";
+import {
+  readAccountTaggedProductIds,
+  syncProductPostMetafields,
+} from "app/lib/product-post-metafields.server";
 import { badRequest, readJsonBody } from "app/lib/http.server";
 import { authenticate } from "../shopify.server";
 
@@ -51,9 +58,10 @@ export async function action({ request }) {
   const { admin, session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
-  const { title, type, media } = await readJsonBody(request);
+  const { title, type, post_limit, media } = await readJsonBody(request);
 
   if (!title?.trim()) return badRequest("title_required");
+  if (!GALLERY_TYPES.includes(type)) return badRequest("invalid_type");
 
   try {
     const account = await readShopAccount(shopDomain);
@@ -66,7 +74,10 @@ export async function action({ request }) {
           shop: shopDomain,
           title,
           type,
-          ig_media: toIgMedia(ownMedia(media, account), account.id),
+          post_limit: toPostLimit(post_limit),
+          ig_media: storesMedia(type)
+            ? toIgMedia(ownMedia(media, account), account.id)
+            : [],
         },
         { fields: GALLERY_FIELDS },
       ),
@@ -78,6 +89,15 @@ export async function action({ request }) {
     let metaobjectSynced = true;
     try {
       await syncGalleryMetaobject(admin, gallery.id, shopDomain);
+      // Backfill: products tagged before product post lists existed have
+      // none yet. Idempotent, so re-running it per PRODUCT gallery is safe.
+      if (type === "PRODUCT") {
+        await syncProductPostMetafields(
+          admin,
+          shopDomain,
+          await readAccountTaggedProductIds([account.id]),
+        );
+      }
     } catch (err) {
       metaobjectSynced = false;
       console.error("[gallery] metaobject sync failed", err);

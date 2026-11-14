@@ -19,14 +19,14 @@ const PER_VIEW_TOOLTIP = (
   </>
 );
 
-export default function CarouselSettingsForm() {
+export default function CarouselSettingsForm({ page }) {
   const { setValue, control, watch, resetField } = useFormContext();
 
   const autoScroll = watch("settings.auto_scroll");
 
   return (
     <>
-      <MediaSettingsSection />
+      <MediaSettingsSection page={page} />
 
       <div className="flex flex-col gap-2">
         <s-heading>Carousel settings</s-heading>

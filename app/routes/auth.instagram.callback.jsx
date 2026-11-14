@@ -14,6 +14,10 @@ import {
   SHOPS,
 } from "app/lib/constants";
 import { purgeAppMetaobjects } from "app/lib/post-metaobjects.server";
+import {
+  readAccountTaggedProductIds,
+  syncProductPostMetafields,
+} from "app/lib/product-post-metafields.server";
 import { unauthenticated } from "../shopify.server";
 
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -51,6 +55,8 @@ async function shopAccountIds(shopDomain, shopHandle) {
 // step is safe to repeat on the next attempt.
 async function clearPreviousAccountData(shopDomain, oldAccountIds) {
   const { admin } = await unauthenticated.admin(shopDomain);
+  // Read before the posts (and their tags) are deleted below.
+  const taggedProductIds = await readAccountTaggedProductIds(oldAccountIds);
   await purgeAppMetaobjects(admin);
 
   // Feeds point at galleries (SET NULL), and deleting a gallery takes its
@@ -68,6 +74,10 @@ async function clearPreviousAccountData(shopDomain, oldAccountIds) {
       filter: { instagram_account: { _in: oldAccountIds } },
     }),
   );
+
+  // With the tags gone this clears each product's post list, so product
+  // pages don't keep pointing at the purged post metaobjects.
+  await syncProductPostMetafields(admin, shopDomain, taggedProductIds);
 }
 
 function buildEmbeddedRedirect(shop, params) {

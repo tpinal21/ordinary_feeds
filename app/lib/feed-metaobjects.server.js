@@ -43,6 +43,9 @@ export async function syncFeedMetaobject(admin, feed, shopDomain) {
       value: JSON.stringify({
         ...feedSettings(feed),
         instagram_username: account?.username ?? null,
+        // Instagram's CDN URL: it expires after a few days, and the dialog
+        // falls back to the Instagram logo once it does.
+        instagram_profile_picture: account?.profile_picture_url ?? null,
       }),
     },
     // Empty clears a gallery that was removed.

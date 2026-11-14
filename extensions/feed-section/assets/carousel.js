@@ -3,6 +3,118 @@
   // teaser until the card is hovered — same as PREVIEW_SECONDS in PostCard.
   var PREVIEW_SECONDS = 3;
 
+  var CHECK_ICON =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  // Shopify's standard storefront events (what themes like Horizon import as
+  // `@shopify/events`). Loaded on first use; null if it can't be loaded.
+  var STANDARD_EVENTS_URL = "https://cdn.shopify.com/storefront/standard-events.js";
+  var standardEvents = null;
+
+  function loadStandardEvents() {
+    if (!standardEvents) {
+      standardEvents = import(STANDARD_EVENTS_URL).catch(function (err) {
+        console.warn("[insta-feed] standard events unavailable", err);
+        return null;
+      });
+    }
+    return standardEvents;
+  }
+
+  function rootUrl() {
+    return (window.Shopify && window.Shopify.routes && window.Shopify.routes.root) || "/";
+  }
+
+  function readCart() {
+    return fetch(rootUrl() + "cart.js", { headers: { Accept: "application/json" } }).then(
+      function (res) {
+        return res.json();
+      },
+    );
+  }
+
+  // Adds one of the variant on `button` with the Ajax Cart API, announcing it
+  // with the standard `shopify:cart:lines-update` event the same way a
+  // theme's own product form does: dispatched before the request, carrying a
+  // promise that resolves with the updated cart. The theme's cart icon (and
+  // anything else listening) updates from that. Used by the post dialog and
+  // the tagged product on each carousel card.
+  function addToCart(button) {
+    var icon = button.innerHTML;
+    var label = button.getAttribute("aria-label");
+    var variantId = button.dataset.instaAddToCart;
+    button.disabled = true;
+
+    loadStandardEvents().then(function (events) {
+      var LinesUpdate = events && events.CartLinesUpdateEvent;
+      var deferred = LinesUpdate ? LinesUpdate.createPromise() : null;
+
+      if (deferred) {
+        button.dispatchEvent(
+          new LinesUpdate({
+            action: "add",
+            context: "product",
+            lines: [{ merchandiseId: variantId, quantity: 1 }],
+            promise: deferred.promise,
+          }),
+        );
+      }
+
+      // Resolves the event's promise with the cart as it now stands.
+      function settle(didError) {
+        if (!deferred) return Promise.resolve();
+        return readCart().then(function (cart) {
+          deferred.resolve({
+            cart: LinesUpdate.createCartFromAjaxResponse(cart),
+            detail: {
+              items: cart.items,
+              source: "insta-feed",
+              sourceId: "insta-feed",
+              itemCount: 1,
+              didError: didError,
+            },
+          });
+        }, function (err) {
+          // The add itself is settled either way; only listeners hear this.
+          deferred.reject(err);
+        });
+      }
+
+      return fetch(rootUrl() + "cart/add.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ items: [{ id: Number(variantId), quantity: 1 }] }),
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) {
+              return settle(true).then(function () {
+                throw new Error(data.description || "Couldn't add to cart");
+              });
+            }
+            return data;
+          });
+        })
+        .then(function (added) {
+          button.innerHTML = CHECK_ICON;
+          button.setAttribute("aria-label", "Added to cart");
+          setTimeout(function () {
+            button.innerHTML = icon;
+            button.setAttribute("aria-label", label);
+            button.disabled = false;
+          }, 1500);
+          document.dispatchEvent(new CustomEvent("insta:cart-added", { detail: added }));
+          return settle(false);
+        })
+        .catch(function (err) {
+          if (deferred) deferred.reject(err);
+          console.error("[insta-feed] add to cart failed", err);
+          button.disabled = false;
+          alert(err.message);
+        });
+    });
+  }
+
   function init(root) {
     if (!window.EmblaCarousel || root.dataset.emblaInitialized) return;
     root.dataset.emblaInitialized = "true";
@@ -86,6 +198,29 @@
 
     var openPost = dialog ? setupDialog(dialog, cards) : null;
 
+    // What a click on a post does, from the Settings page's "Post clicks"
+    // (`click.action`). Each action falls back to the next one that the post
+    // supports: product -> Instagram -> popup.
+    var clickAction = root.dataset.clickAction || "popup";
+
+    function onPostClick(entry) {
+      if (clickAction === "none") return;
+
+      var data = entry.card.dataset;
+      if (clickAction === "product" && data.productUrl) {
+        window.location.href = data.productUrl;
+        return;
+      }
+      if (
+        (clickAction === "product" || clickAction === "instagram") &&
+        data.permalink
+      ) {
+        window.open(data.permalink, "_blank", "noopener");
+        return;
+      }
+      if (openPost) openPost(cards.indexOf(entry));
+    }
+
     root.querySelectorAll("[data-insta-card]").forEach(function (card) {
       var video = card.querySelector("[data-insta-video]");
       if (!video) return;
@@ -125,13 +260,17 @@
         }
       });
 
-      card.addEventListener("click", function () {
-        if (openPost) {
-          openPost(cards.indexOf(entry));
+      card.addEventListener("click", function (e) {
+        // The tagged product overlay: its cart button adds straight to the
+        // cart, and its link goes to the product page, neither opens the post.
+        var add = e.target.closest("[data-insta-add-to-cart]");
+        if (add) {
+          e.preventDefault();
+          if (!add.disabled) addToCart(add);
           return;
         }
-        if (video.paused) video.play().catch(function () {});
-        else video.pause();
+        if (e.target.closest("[data-insta-product-link]")) return;
+        onPostClick(entry);
       });
 
       video.addEventListener("timeupdate", function () {
@@ -174,6 +313,13 @@
     var closeBtn = dialog.querySelector("[data-insta-dialog-close]");
     var shareBtn = dialog.querySelector("[data-insta-dialog-share]");
     var permalink = dialog.querySelector("[data-insta-dialog-permalink]");
+    var likes = dialog.querySelector("[data-insta-dialog-likes]");
+    var likesCount = dialog.querySelector("[data-insta-dialog-likes-count]");
+    // 30412 -> "30.4K": stored exact, shortened for display.
+    var compact = new Intl.NumberFormat(document.documentElement.lang || "en", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    });
     var side = dialog.querySelector("[data-insta-info]");
     var slot = dialog.querySelector("[data-insta-details-slot]");
     var overlay = dialog.querySelector("[data-insta-info-overlay]");
@@ -249,6 +395,14 @@
         video.play().catch(function () {});
       });
 
+      // Empty when the owner hides likes or the post hasn't synced it yet.
+      var likeCount = parseInt(card.dataset.likes, 10);
+      likes.hidden = isNaN(likeCount);
+      if (!likes.hidden) {
+        likesCount.textContent = compact.format(likeCount);
+        likes.setAttribute("aria-label", likeCount + " likes");
+      }
+
       var url = card.dataset.permalink;
       permalink.hidden = !url;
       if (url) permalink.href = url;
@@ -298,17 +452,37 @@
       if (video.paused) video.play().catch(function () {});
       else video.pause();
     });
+    // timeupdate only fires ~4 times a second, so the bar is redrawn every
+    // frame while the video plays, and once more whenever it stops or seeks.
+    var progressFrame = 0;
+    function drawProgress() {
+      if (bar && video.duration) {
+        bar.style.width = (video.currentTime / video.duration) * 100 + "%";
+      }
+    }
+    function tickProgress() {
+      drawProgress();
+      progressFrame = requestAnimationFrame(tickProgress);
+    }
+    function stopProgress() {
+      cancelAnimationFrame(progressFrame);
+      progressFrame = 0;
+      drawProgress();
+    }
+
     video.addEventListener("play", function () {
       dialog.classList.remove("is-paused");
     });
     video.addEventListener("pause", function () {
       dialog.classList.add("is-paused");
     });
-    video.addEventListener("timeupdate", function () {
-      if (bar && video.duration) {
-        bar.style.width = (video.currentTime / video.duration) * 100 + "%";
-      }
+    video.addEventListener("playing", function () {
+      cancelAnimationFrame(progressFrame);
+      progressFrame = requestAnimationFrame(tickProgress);
     });
+    video.addEventListener("pause", stopProgress);
+    video.addEventListener("waiting", stopProgress);
+    video.addEventListener("seeked", drawProgress);
 
     muteBtn.addEventListener("click", function () {
       setMuted(!muted);
@@ -340,6 +514,12 @@
 
     // Captions expand on click (event delegation: they're re-cloned per post).
     dialog.addEventListener("click", function (e) {
+      var add = e.target.closest("[data-insta-add-to-cart]");
+      if (add) {
+        e.preventDefault();
+        if (!add.disabled) addToCart(add);
+        return;
+      }
       var caption = e.target.closest("[data-insta-caption]");
       if (caption) {
         caption.classList.toggle("is-expanded");

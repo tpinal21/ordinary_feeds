@@ -37,6 +37,14 @@ type = "json"
 name = "App settings"
 description = "Carousel and feed display settings configured in the app."
 
+[product.metafields.app.instagram_posts]
+type = "list.metaobject_reference<$app:post>"
+name = "Instagram posts"
+description = "Posts this product is tagged in, newest first. Read by PRODUCT galleries."
+
+  [product.metafields.app.instagram_posts.access]
+  storefront = "public_read"
+
 [metaobjects.app.post]
 name = "Instagram post"
 display_name_field = "permalink"
@@ -66,6 +74,11 @@ type = "url"
 name = "Caption"
 type = "multi_line_text_field"
 
+[metaobjects.app.post.fields.like_count]
+name = "Like count"
+description = "Likes on Instagram at the last sync. Empty when the owner hides likes."
+type = "number_integer"
+
 [metaobjects.app.post.fields.products]
 name = "Tagged products"
 type = "list.product_reference"
@@ -81,6 +94,14 @@ display_name_field = "title"
 name = "Title"
 type = "single_line_text_field"
 required = true
+
+[metaobjects.app.gallery.fields.type]
+name = "Type"
+type = "single_line_text_field"
+
+[metaobjects.app.gallery.fields.post_limit]
+name = "Post limit"
+type = "number_integer"
 
 [metaobjects.app.gallery.fields.posts]
 name = "Posts"

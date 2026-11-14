@@ -1,5 +1,7 @@
 // Mirrors a Directus gallery into the app-owned `$app:gallery` metaobject the
-// theme blocks read (title and its posts, in order). Directus stays the
+// theme blocks read (title, type, post limit and its posts, in order).
+// PRODUCT galleries have no posts of their own: the theme block reads the
+// current product's `$app.instagram_posts` metafield instead. Directus stays the
 // source of truth; this runs after every create and update.
 import { readItems } from "@directus/sdk";
 import directus from "app/directus.server";
@@ -24,6 +26,8 @@ const readGallery = async (galleryId, shopDomain) => {
       fields: [
         "id",
         "title",
+        "type",
+        "post_limit",
         "ig_media.order",
         "ig_media.instagram_media_id.id",
         "ig_media.instagram_media_id.media_type",
@@ -31,6 +35,7 @@ const readGallery = async (galleryId, shopDomain) => {
         "ig_media.instagram_media_id.thumbnail_url",
         "ig_media.instagram_media_id.permalink",
         "ig_media.instagram_media_id.caption",
+        "ig_media.instagram_media_id.like_count",
         "ig_media.instagram_media_id.products.product_id.id",
       ],
       // Scoped to the shop, so a gallery id from the client can never mirror
@@ -51,7 +56,9 @@ export async function syncGalleryMetaobject(admin, galleryId, shopDomain) {
   const gallery = await readGallery(galleryId, shopDomain);
   if (!gallery) throw new Error(`Gallery ${galleryId} not found`);
 
-  const media = [...(gallery.ig_media ?? [])]
+  const media = (
+    gallery.type === "PRODUCT" ? [] : [...(gallery.ig_media ?? [])]
+  )
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((row) => row.instagram_media_id)
     .filter(Boolean);
@@ -66,6 +73,12 @@ export async function syncGalleryMetaobject(admin, galleryId, shopDomain) {
       metaobject: {
         fields: [
           { key: "title", value: gallery.title },
+          { key: "type", value: gallery.type ?? "MANUAL" },
+          // Unset on galleries saved before the limit existed; the theme
+          // block then falls back to the highest limit, so none get cut.
+          ...(gallery.post_limit
+            ? [{ key: "post_limit", value: String(gallery.post_limit) }]
+            : []),
           { key: "posts", value: JSON.stringify(posts) },
         ],
       },

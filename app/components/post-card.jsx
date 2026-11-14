@@ -1,6 +1,7 @@
 import { VolumeIcon } from "app/components/icons/volume-icon";
 import { VolumeOffIcon } from "app/components/icons/volume-off-icon";
 import { pickProductTag } from "app/lib/product-tag";
+import { ShoppingCartIcon } from "lucide-react";
 import { cn } from "app/lib/utils";
 import {
   useEffect,
@@ -57,6 +58,9 @@ export default function PostCard({
   const id = useId();
 
   const taggedProduct = post?.products?.[0]?.product_id ?? null;
+  // In a feed (a click opens the post) the card mirrors the storefront slide:
+  // mute at the top, tagged product along the bottom.
+  const inFeed = !!onOpen;
 
   // This card has sound only while it is the active one; every other card mutes.
   const activeId = useSyncExternalStore(
@@ -264,8 +268,9 @@ export default function PostCard({
         onClick={toggleMute}
         aria-label={muted ? "Unmute video" : "Mute video"}
         className={cn(
-          "absolute right-1.5 bottom-1.5 group-hover/post-card:opacity-100 transition-all opacity-0 cursor-pointer size-6 rounded-full backdrop-blur-md flex justify-center items-center bg-neutral-600/20",
+          "absolute z-10 right-1.5 bottom-1.5 group-hover/post-card:opacity-100 transition-all opacity-0 cursor-pointer size-6 rounded-full backdrop-blur-md flex justify-center items-center bg-neutral-600/20",
           { "top-1/2 left-1/2 -translate-1/2 size-10": showTagProducts },
+          { "top-1.5 bottom-auto": inFeed && !showTagProducts },
         )}
       >
         {muted ? (
@@ -278,6 +283,12 @@ export default function PostCard({
           />
         )}
       </button>
+      {inFeed && !showTagProducts && taggedProduct && (
+        <FeedProductBar
+          product={taggedProduct}
+          more={(post.products?.length ?? 1) - 1}
+        />
+      )}
       {showTagProducts && (
         <>
           {taggedProduct ? (
@@ -315,3 +326,40 @@ export default function PostCard({
     </div>
   );
 }
+
+// Preview of the storefront slide's tagged product bar (see
+// .insta-carousel__product in the theme's carousel.css). Price and cart only
+// exist on the storefront, so the cart button here does nothing.
+const FeedProductBar = ({ product, more }) => (
+  <div
+    className="absolute z-10 inset-x-1.5 bottom-2 flex items-center gap-1.5 p-1.25 rounded-[10px] bg-white/90 backdrop-blur-md text-neutral-900 opacity-0 translate-y-1 transition-all group-hover/post-card:opacity-100 group-hover/post-card:translate-y-0"
+    role="presentation"
+    // Clicks on the bar shouldn't open the post underneath.
+    onClick={(e) => e.stopPropagation()}
+  >
+    <span className="size-8 flex-none overflow-hidden rounded-md bg-neutral-100">
+      {product.images?.[0]?.original_src && (
+        <img
+          src={product.images[0].original_src}
+          alt=""
+          className="size-full object-cover"
+        />
+      )}
+    </span>
+    <span className="flex-1 min-w-0 text-xs font-semibold truncate">
+      {product.title}
+    </span>
+    {more > 0 && (
+      <span className="flex-none text-[11px] font-semibold text-neutral-600">
+        +{more}
+      </span>
+    )}
+    <button
+      type="button"
+      aria-label={`Add ${product.title} to cart`}
+      className="flex-none size-7 rounded-full bg-neutral-900 text-white flex items-center justify-center cursor-pointer"
+    >
+      <ShoppingCartIcon className="size-3.75" />
+    </button>
+  </div>
+);

@@ -9,11 +9,17 @@ import {
   ownsGallery,
   readShopAccount,
   serverError,
+  storesMedia,
   toGallery,
   toIgMedia,
+  toPostLimit,
 } from "app/lib/galleries.server";
 import { syncGalleryMetaobject } from "app/lib/gallery-metaobjects.server";
 import { badRequest, readJsonBody } from "app/lib/http.server";
+import {
+  readAccountTaggedProductIds,
+  syncProductPostMetafields,
+} from "app/lib/product-post-metafields.server";
 import {
   deleteGalleryMetaobject,
   deletePostMetaobjects,
@@ -41,12 +47,13 @@ export async function action({ request, params }) {
 }
 
 async function updateGallery(admin, request, shopDomain, galleryId) {
-  const { title, media } = await readJsonBody(request);
+  const { title, post_limit, media } = await readJsonBody(request);
 
   if (!title?.trim()) return badRequest("title_required");
 
   try {
-    if (!(await ownsGallery(shopDomain, galleryId))) return galleryNotFound();
+    const owned = await ownsGallery(shopDomain, galleryId);
+    if (!owned) return galleryNotFound();
 
     const account = await readShopAccount(shopDomain);
     if (!account) return missingAccount();
@@ -57,7 +64,11 @@ async function updateGallery(admin, request, shopDomain, galleryId) {
         galleryId,
         {
           title,
-          ig_media: toIgMedia(ownMedia(media, account), account.id),
+          post_limit: toPostLimit(post_limit),
+          // The type can't change after creation; see storesMedia.
+          ...(storesMedia(owned.type) && {
+            ig_media: toIgMedia(ownMedia(media, account), account.id),
+          }),
         },
         { fields: GALLERY_FIELDS },
       ),
@@ -66,6 +77,14 @@ async function updateGallery(admin, request, shopDomain, galleryId) {
     // Saving again re-runs this, so a failure here is safe to surface.
     try {
       await syncGalleryMetaobject(admin, galleryId, shopDomain);
+      // Retries the backfill from create, in case it failed there.
+      if (owned.type === "PRODUCT") {
+        await syncProductPostMetafields(
+          admin,
+          shopDomain,
+          await readAccountTaggedProductIds([account.id]),
+        );
+      }
     } catch (err) {
       console.error("[gallery] metaobject sync failed", err);
       return Response.json(
