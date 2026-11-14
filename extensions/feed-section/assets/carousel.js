@@ -3,6 +3,44 @@
   // teaser until the card is hovered — same as PREVIEW_SECONDS in PostCard.
   var PREVIEW_SECONDS = 3;
 
+  // ---- Feed metrics ----------------------------------------------------
+  // Published as custom customer events; the app's web pixel
+  // (extensions/insta-pixel) forwards them to the app. Shopify applies the
+  // shopper's privacy consent there. Nothing is sent from the theme editor.
+  var EVENT_PREFIX = "insta_feed:";
+
+  function track(type, data) {
+    if (window.Shopify && window.Shopify.designMode) return;
+    var analytics = window.Shopify && window.Shopify.analytics;
+    if (!analytics || typeof analytics.publish !== "function") return;
+    try {
+      analytics.publish(EVENT_PREFIX + type, data);
+    } catch (err) {
+      // Metrics must never break the feed.
+    }
+  }
+
+  // Impressions and video views count once per page view.
+  var trackedOnce = {};
+  function trackOnce(key, type, data) {
+    if (trackedOnce[key]) return;
+    trackedOnce[key] = true;
+    track(type, data);
+  }
+
+  // Feed, post and product ids for an event, read from the markup:
+  // `data-feed-id` on the block root, `data-insta-post` / `data-post-id` and
+  // `data-insta-product` (numeric product id) on the element.
+  function eventData(el, postId) {
+    var root = el && el.closest("[data-insta-carousel]");
+    var productId = el && el.dataset.instaProduct;
+    return {
+      feed_id: (root && root.dataset.feedId) || null,
+      post_id: postId || (el && el.dataset.instaPost) || null,
+      product_id: productId ? "gid://shopify/Product/" + productId : null,
+    };
+  }
+
   var CHECK_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 
@@ -104,6 +142,7 @@
             button.disabled = false;
           }, 1500);
           document.dispatchEvent(new CustomEvent("insta:cart-added", { detail: added }));
+          track("add_to_cart", eventData(button));
           return settle(false);
         })
         .catch(function (err) {
@@ -175,6 +214,21 @@
     embla.on("reInit", update);
     update();
 
+    // Impression: the feed is at least half on screen, once per page view.
+    if ("IntersectionObserver" in window) {
+      var seen = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (e) {
+            if (!e.isIntersecting) return;
+            seen.disconnect();
+            trackOnce("impression:" + (root.dataset.feedId || ""), "impression", eventData(root));
+          });
+        },
+        { threshold: 0.5 },
+      );
+      seen.observe(root);
+    }
+
     // Per-card video behavior, mirroring the app's PostCard. Only one card may
     // have sound at a time: `activeCard` is that card (null = all muted).
     var cards = [];
@@ -205,6 +259,7 @@
 
     function onPostClick(entry) {
       if (clickAction === "none") return;
+      track("post_click", eventData(entry.card, entry.card.dataset.postId));
 
       var data = entry.card.dataset;
       if (clickAction === "product" && data.productUrl) {
@@ -269,7 +324,11 @@
           if (!add.disabled) addToCart(add);
           return;
         }
-        if (e.target.closest("[data-insta-product-link]")) return;
+        var link = e.target.closest("[data-insta-product-link]");
+        if (link) {
+          track("product_click", eventData(link));
+          return;
+        }
         onPostClick(entry);
       });
 
@@ -280,6 +339,12 @@
         if (mediaAutoPlay && !entry.hovering) {
           if (video.currentTime >= PREVIEW_SECONDS) video.currentTime = 0;
           return;
+        }
+        // A view: watched past the teaser length on purpose (hovered, or
+        // played with auto play off).
+        if (video.currentTime >= PREVIEW_SECONDS) {
+          var postId = card.dataset.postId;
+          trackOnce("view:" + postId, "video_view", eventData(card, postId));
         }
         if (bar) {
           bar.style.width = (video.currentTime / video.duration) * 100 + "%";
@@ -452,6 +517,13 @@
       if (video.paused) video.play().catch(function () {});
       else video.pause();
     });
+    // A view in the dialog counts like one on the card (once per post).
+    video.addEventListener("timeupdate", function () {
+      var entry = cards[current];
+      if (!entry || video.currentTime < PREVIEW_SECONDS) return;
+      var postId = entry.card.dataset.postId;
+      trackOnce("view:" + postId, "video_view", eventData(entry.card, postId));
+    });
     // timeupdate only fires ~4 times a second, so the bar is redrawn every
     // frame while the video plays, and once more whenever it stops or seeks.
     var progressFrame = 0;
@@ -518,6 +590,11 @@
       if (add) {
         e.preventDefault();
         if (!add.disabled) addToCart(add);
+        return;
+      }
+      var productLink = e.target.closest("a[data-insta-product]");
+      if (productLink) {
+        track("product_click", eventData(productLink));
         return;
       }
       var caption = e.target.closest("[data-insta-caption]");

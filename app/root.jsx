@@ -5,6 +5,7 @@ import { ScrollArea } from "app/components/ui/scroll-area";
 import { Spinner } from "app/components/ui/spinner";
 import { getShopDetails, toFeed } from "app/lib/shops.server";
 import { authenticate } from "app/shopify.server";
+import { ensureWebPixel } from "app/lib/web-pixel.server";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
 import { Suspense, useEffect, useRef } from "react";
 import {
@@ -27,9 +28,15 @@ const STICKY_EMBEDDED_PARAMS = ["shop", "host", "embedded"];
 
 export async function loader({ request }) {
   const url = new URL(request.url);
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
 
   const shopDomain = session.shop;
+
+  // Not awaited: feed metrics need the web pixel active, but a failure here
+  // (e.g. scopes not granted yet) mustn't block the app. Retried next load.
+  ensureWebPixel(admin, shopDomain).catch((err) =>
+    console.error("[web-pixel] activation failed", err),
+  );
 
   // Not awaited: the shell streams immediately and the outlet suspends until this resolves.
   const shopDetails = getShopDetails(shopDomain).then((details) => ({

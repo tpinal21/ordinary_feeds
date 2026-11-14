@@ -166,6 +166,12 @@ importers:
         specifier: ^6.3.6
         version: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
 
+  extensions/insta-pixel:
+    dependencies:
+      '@shopify/web-pixels-extension':
+        specifier: ^2.18.0
+        version: 2.18.0
+
 packages:
 
   '@ardatan/relay-compiler@13.0.2':
@@ -1542,6 +1548,9 @@ packages:
 
   '@shopify/storefront-api-client@2.0.1':
     resolution: {integrity: sha512-GsEb5L3y8ffqWHr7LPyrs8tFtfZJPlyC1kS3YClGQXX1eWS3HqWysvMwnEiXbYwCA0pUkthvAcqLZj/xXx3wCQ==}
+
+  '@shopify/web-pixels-extension@2.18.0':
+    resolution: {integrity: sha512-qHp93QKdxJ8UREzkYOje6343An2wvXLUF71uduahiTjBfYXQ7VqIAXoHCwzCnP3Kss1AXLpz7XPaKCRC0ONOTw==}
 
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
@@ -6418,6 +6427,8 @@ snapshots:
   '@shopify/storefront-api-client@2.0.1':
     dependencies:
       '@shopify/graphql-client': 2.0.1
+
+  '@shopify/web-pixels-extension@2.18.0': {}
 
   '@sindresorhus/merge-streams@4.0.0': {}
 

@@ -1,0 +1,31 @@
+# Forwards the feed's storefront events (published by
+# extensions/feed-section/assets/carousel.js as `insta_feed:*` custom events)
+# to the app's metrics endpoint. Activated per shop by the app with
+# webPixelCreate / webPixelUpdate (app/lib/web-pixel.server.js).
+type = "web_pixel_extension"
+name = "insta-pixel"
+runtime_context = "strict"
+uid = "e0860ff2-8165-b10a-c8d5-0e314946cbe420702f44"
+
+# Feed metrics are analytics only; the pixel doesn't run until the shopper
+# consents to analytics where consent is required.
+[customer_privacy]
+analytics = true
+marketing = false
+preferences = false
+sale_of_data = "disabled"
+
+[settings]
+type = "object"
+
+[settings.fields.shop]
+name = "Shop"
+description = "The shop's myshopify domain, sent with every event."
+type = "single_line_text_field"
+validations = [{ name = "min", value = "1" }]
+
+[settings.fields.collectUrl]
+name = "Collect URL"
+description = "The app endpoint events are sent to."
+type = "single_line_text_field"
+validations = [{ name = "min", value = "1" }]

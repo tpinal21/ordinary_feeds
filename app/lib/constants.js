@@ -5,3 +5,4 @@ export const IG_MEDIA_PRODUCTS = "instagram_media_products";
 export const CAROUSEL_BLOCK_HANDLE = "carousel";
 export const FEEDS = "feeds";
 export const GALLERIES = "galleries";
+export const METRIC_EVENTS = "metric_events";

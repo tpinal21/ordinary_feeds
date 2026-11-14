@@ -131,6 +131,7 @@
     aria-roledescription="carousel"
     tabindex="0"
     data-insta-carousel
+    data-feed-id="{{ feed.system.handle }}"
     data-loop="{{ cs_loop }}"
     data-auto-scroll="{{ cs_auto_scroll }}"
     data-speed="{{ cs_speed }}"
@@ -160,6 +161,7 @@
             role="group"
             aria-roledescription="slide"
             data-insta-card
+            data-post-id="{{ post.system.handle }}"
             data-src="{{ media_url | escape }}"
             data-poster="{{ poster | escape }}"
             data-permalink="{{ post.permalink.value | escape }}"
@@ -196,7 +198,13 @@
               {%- endcomment -%}
               {% if card_product %}
                 <div class="insta-carousel__product">
-                  <a class="insta-carousel__product-link" href="{{ card_product.url }}" data-insta-product-link>
+                  <a
+                    class="insta-carousel__product-link"
+                    href="{{ card_product.url }}"
+                    data-insta-product-link
+                    data-insta-post="{{ post.system.handle }}"
+                    data-insta-product="{{ card_product.id }}"
+                  >
                     <span class="insta-carousel__product-image">
                       {% if card_product.featured_image %}
                         <img
@@ -227,6 +235,8 @@
                       type="button"
                       class="insta-carousel__product-add"
                       data-insta-add-to-cart="{{ card_product.selected_or_first_available_variant.id }}"
+                      data-insta-post="{{ post.system.handle }}"
+                      data-insta-product="{{ card_product.id }}"
                       aria-label="Add {{ card_product.title | escape }} to cart"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
@@ -273,7 +283,12 @@
                           {% endif %}
                         </span>
                         <span class="insta-dialog__product-info">
-                          <a class="insta-dialog__product-title" href="{{ product.url }}">{{ product.title | escape }}</a>
+                          <a
+                            class="insta-dialog__product-title"
+                            href="{{ product.url }}"
+                            data-insta-post="{{ post.system.handle }}"
+                            data-insta-product="{{ product.id }}"
+                          >{{ product.title | escape }}</a>
                           {%- comment -%}
                             Live from Shopify: `price` is the cheapest variant,
                             hence "From" when variants differ.
@@ -302,6 +317,8 @@
                             type="button"
                             class="insta-dialog__product-add"
                             data-insta-add-to-cart="{{ product.selected_or_first_available_variant.id }}"
+                            data-insta-post="{{ post.system.handle }}"
+                            data-insta-product="{{ product.id }}"
                             aria-label="Add {{ product.title | escape }} to cart"
                           >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
