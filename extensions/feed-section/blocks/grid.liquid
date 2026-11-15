@@ -1,0 +1,23 @@
+{{ 'feed.css' | asset_url | stylesheet_tag }}
+{{ 'grid.css' | asset_url | stylesheet_tag }}
+{%- comment -%} Embla drives the post dialog's vertical swipe. {%- endcomment -%}
+<script src="{{ 'embla-carousel.umd.js' | asset_url }}" defer></script>
+<script src="{{ 'feed.js' | asset_url }}" defer></script>
+
+{% render 'ordinary-feeds-feed', block: block, feed_type: 'GRID' %}
+
+{% schema %}
+{
+  "name": "Ordinary Feeds Grid",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "feed",
+      "label": "Feed label",
+      "placeholder": "Auto: this page's first grid feed",
+      "info": "Leave empty to show this page's first grid feed (GRID_HP_01 on the home page, GRID_PP_01 on product pages, GRID_CP_01 on collection pages). Or paste any grid feed label from the app."
+    }
+  ]
+}
+{% endschema %}

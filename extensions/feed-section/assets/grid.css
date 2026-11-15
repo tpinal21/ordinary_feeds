@@ -1,0 +1,125 @@
+/**
+ * Sizing rules are copied from app/grid.css so the storefront lays out
+ * exactly like the app preview. Keep the two in sync:
+ *
+ *   --ordinary-feeds-columns   tiles per row at --ordinary-feeds-design-width
+ *   --ordinary-feeds-gap       space between two neighbouring tiles
+ *   --ordinary-feeds-radius    tile corner radius
+ *   --ordinary-feeds-aspect    tile shape
+ *
+ * Card and dialog styles are shared with the carousel — see feed.css.
+ */
+.ordinary-feeds-grid {
+  --ordinary-feeds-columns: 4;
+  --ordinary-feeds-gap: 0px;
+  --ordinary-feeds-radius: 0px;
+  --ordinary-feeds-aspect: 1 / 1;
+  /* Tiles are a fixed shape, so the media fills them rather than letterboxing
+     the way a carousel slide does. */
+  --ordinary-feeds-fit: cover;
+
+  /* The width --ordinary-feeds-columns is authored against, same as the
+     carousel's. Subtracting the gaps is what makes exactly
+     --ordinary-feeds-columns tiles land in --ordinary-feeds-design-width. */
+  --ordinary-feeds-design-width: 1080px;
+  --ordinary-feeds-tile-width: calc(
+    (
+        var(--ordinary-feeds-design-width) - (var(--ordinary-feeds-columns) - 1) *
+          var(--ordinary-feeds-gap)
+      ) /
+      var(--ordinary-feeds-columns)
+  );
+
+  /* Breakpoints follow the grid's own width, matching the app preview's
+     ruler:
+       Laptop L  > 1024   --ordinary-feeds-columns, more on wider screens
+       Laptop    769–1024 exactly --ordinary-feeds-columns
+       Tablet    426–768  three across, or fewer
+       Mobile    <= 425   two across, or fewer */
+  container-type: inline-size;
+  box-sizing: border-box;
+  /* Fill the section the block sits in. Inline-size containment reports 0
+     intrinsic width, so the block claims its parent's full width instead
+     (see the app block wrapper rule in feed.css). */
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  justify-self: stretch;
+  padding: 1rem 0;
+}
+
+.ordinary-feeds-grid__items {
+  /* Declared here rather than on the root so the band overrides below, which
+     also target __items, are what --ordinary-feeds-band-tile resolves against
+     (a container can't query itself). */
+  --ordinary-feeds-band-columns: var(--ordinary-feeds-columns);
+  --ordinary-feeds-band-tile: calc(
+    (100% - (var(--ordinary-feeds-band-columns) - 1) * var(--ordinary-feeds-gap)) /
+      var(--ordinary-feeds-band-columns)
+  );
+
+  display: grid;
+  /* The smaller of the design-width size and the band share: up to the design
+     width each row holds exactly --ordinary-feeds-band-columns, past it
+     auto-fill adds tiles instead of stretching them. auto-fill, not auto-fit,
+     so a few posts on a wide screen keep their size. */
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(var(--ordinary-feeds-tile-width), var(--ordinary-feeds-band-tile)), 1fr)
+  );
+  gap: var(--ordinary-feeds-gap);
+}
+
+/* Tablet */
+@container (max-width: 768px) {
+  .ordinary-feeds-grid__items {
+    --ordinary-feeds-band-columns: min(3, var(--ordinary-feeds-columns));
+  }
+}
+
+/* Mobile L / M / S */
+@container (max-width: 425px) {
+  .ordinary-feeds-grid__items {
+    --ordinary-feeds-band-columns: min(2, var(--ordinary-feeds-columns));
+  }
+}
+
+.ordinary-feeds-grid__item {
+  min-width: 0;
+}
+
+/* Tiles past the first batch wait for "Load more"; don't let a theme's
+   display rule on cards show them early. */
+.ordinary-feeds-grid__item[hidden] {
+  display: none;
+}
+
+.ordinary-feeds-grid__more {
+  display: flex;
+  justify-content: center;
+  margin-top: max(var(--ordinary-feeds-gap), 1rem);
+}
+
+/**
+ * The button also carries the theme's `button` class. `:where()` drops these
+ * rules to zero specificity, so whatever the theme defines for its buttons
+ * wins outright; this is only a fallback for themes that style no such class.
+ * Keep every declaration inside the `:where()`.
+ */
+:where(.ordinary-feeds-grid__more-btn) {
+  font: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  padding: 0.9em 2.2em;
+  color: #fff;
+  background: #121212;
+  border: 1px solid transparent;
+  border-radius: 0;
+  transition: opacity 150ms ease;
+}
+
+:where(.ordinary-feeds-grid__more-btn:hover) {
+  opacity: 0.85;
+}

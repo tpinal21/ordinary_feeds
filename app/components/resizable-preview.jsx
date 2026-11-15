@@ -27,10 +27,11 @@ function bottomHandle(axis, ref) {
 
 // Bands match the ruler markers below.
 function deviceType(width) {
-  if (width >= 1024) return "Laptop";
-  if (width >= 768) return "Tablet";
-  if (width >= 425) return "Mobile L";
-  if (width >= 375) return "Mobile M";
+  if (width > 1024) return "Laptop L";
+  if (width > 768) return "Laptop";
+  if (width > 425) return "Tablet";
+  if (width > 375) return "Mobile L";
+  if (width > 320) return "Mobile M";
   return "Mobile S";
 }
 

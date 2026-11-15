@@ -16,8 +16,10 @@ export default function FeedSettingsForm({ type, page }) {
   if (!Form) return null;
 
   return (
-    <Card className="flex flex-col gap-4 mt-2 px-3 max-w-4xl mx-auto w-full">
-      <Form page={page} />
-    </Card>
+    <div className="mt-4 max-w-4xl mx-auto w-full">
+      <s-section heading="Settings">
+        <Form page={page} />
+      </s-section>
+    </div>
   );
 }

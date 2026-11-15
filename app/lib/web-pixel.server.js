@@ -1,4 +1,4 @@
-// Activates the app's web pixel (extensions/insta-pixel) for a shop, with
+// Activates the app's web pixel (extensions/ordinary-feeds-pixel) for a shop, with
 // the settings it needs to send feed metrics back to the app. Safe to call
 // on every admin load: it only writes when the pixel is missing or its
 // settings changed, and remembers shops it already handled in this process.

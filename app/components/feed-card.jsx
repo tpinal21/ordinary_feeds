@@ -133,8 +133,31 @@ export const FeedCard = ({ feed }) => {
             )}
           </div>
         </div>
-        <div className="mt-1">
-          <s-heading>Preview</s-heading>
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-1">
+            <s-heading>Preview</s-heading>
+            <button
+              type="button"
+              interestfor={`preview-help-${feed.id}`}
+              aria-label="About this preview"
+              className="cursor-help"
+            >
+              <s-icon type="info" tone="auto" color="subdued" />
+            </button>
+            <s-tooltip id={`preview-help-${feed.id}`}>
+              Posts are shown at laptop size. Open Full preview to check tablet
+              and mobile.
+            </s-tooltip>
+          </div>
+          <s-button
+            variant="tertiary"
+            icon="maximize"
+            commandfor={appWindowId}
+            command="--show"
+            accessibilitylabel={`Full preview of ${feed.label}`}
+          >
+            Full preview
+          </s-button>
         </div>
         <FeedPreview
           type={feed?.type}

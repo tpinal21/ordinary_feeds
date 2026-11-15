@@ -1,0 +1,67 @@
+{%- comment -%}
+  Carousel layout for a feed resolved by ordinary-feeds-feed.liquid; same
+  params as the ones it passes. Scrolling is wired by feed.js (initCarousel).
+{%- endcomment -%}
+{%- liquid
+  # Per-feed settings. Fallbacks mirror CAROUSEL_FEED_DEFAULTS in
+  # app/lib/feeds.js; `allow_false` keeps a stored `false` from being swapped
+  # for the default.
+  assign cs_loop = feed_settings.loop | default: true, allow_false: true
+  assign cs_auto_scroll = feed_settings.auto_scroll | default: false, allow_false: true
+  assign cs_media_auto_play = feed_settings.media_auto_play | default: false, allow_false: true
+  assign cs_show_products = feed_settings.show_tagged_products | default: true, allow_false: true
+  assign cs_per_view = feed_settings.slides_per_view | default: 7
+  assign cs_speed = feed_settings.speed | default: 1
+  assign cs_gap = feed_settings.item_gap | default: 8, allow_false: true
+  assign cs_radius = feed_settings.border_radius | default: 8, allow_false: true
+-%}
+<div
+  id="ordinary-feeds-{{ block.id }}"
+  class="ordinary-feeds-carousel"
+  role="region"
+  aria-roledescription="carousel"
+  tabindex="0"
+  data-ordinary-feeds-root
+  data-ordinary-feeds-carousel
+  data-feed-id="{{ feed.system.handle }}"
+  data-loop="{{ cs_loop }}"
+  data-auto-scroll="{{ cs_auto_scroll }}"
+  data-speed="{{ cs_speed }}"
+  data-media-auto-play="{{ cs_media_auto_play }}"
+  data-click-action="{{ click_action | escape }}"
+  style="--ordinary-feeds-per-view: {{ cs_per_view }};--ordinary-feeds-gap: {{ cs_gap }}px;--ordinary-feeds-radius: {{ cs_radius }}px"
+  {{ block.shopify_attributes }}
+>
+  <div class="ordinary-feeds-carousel__viewport">
+    <div class="ordinary-feeds-carousel__container">
+      {% for post in posts limit: post_limit %}
+        {% render 'ordinary-feeds-card',
+          post: post,
+        show_products: cs_show_products,
+          item_class: 'ordinary-feeds-carousel__slide',
+          item_attrs: 'role="group" aria-roledescription="slide"'
+        %}
+      {% endfor %}
+    </div>
+  </div>
+
+  {%- comment -%} Same as the app: auto-scrolling feeds have no arrows. {%- endcomment -%}
+  {% unless cs_auto_scroll %}
+  <button type="button" class="ordinary-feeds-carousel__btn ordinary-feeds-carousel__btn--prev" aria-label="Previous slide">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m15 18-6-6 6-6"/>
+    </svg>
+    <span class="ordinary-feeds-carousel__sr">Previous slide</span>
+  </button>
+  <button type="button" class="ordinary-feeds-carousel__btn ordinary-feeds-carousel__btn--next" aria-label="Next slide">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m9 18 6-6-6-6"/>
+    </svg>
+    <span class="ordinary-feeds-carousel__sr">Next slide</span>
+  </button>
+  {% endunless %}
+
+  {% unless click_action == 'none' %}
+    {% render 'ordinary-feeds-dialog', ig_username: ig_username, ig_avatar: ig_avatar %}
+  {% endunless %}
+</div>

@@ -12,10 +12,10 @@ import { useState } from "react";
 // keeps this layout identical to the theme extension, which sets the very same
 // properties from Liquid.
 const gridVars = (settings) => ({
-  "--insta-columns": settings?.columns || 1,
-  "--insta-gap": `${settings?.item_gap ?? 0}px`,
-  "--insta-radius": `${settings?.border_radius ?? 0}px`,
-  "--insta-aspect": settings?.aspect_ratio || "1 / 1",
+  "--ordinary-feeds-columns": settings?.columns || 1,
+  "--ordinary-feeds-gap": `${settings?.item_gap ?? 0}px`,
+  "--ordinary-feeds-radius": `${settings?.border_radius ?? 0}px`,
+  "--ordinary-feeds-aspect": settings?.aspect_ratio || "1 / 1",
 });
 
 export function FeedGrid({ media = [], settings }) {
@@ -43,23 +43,24 @@ export function FeedGrid({ media = [], settings }) {
   const hasMore = overflow === "load_more" && visible.length < media.length;
 
   return (
-    <div className="insta-grid" style={gridVars(settings)}>
-      <div className="insta-grid__items">
+    <div className="ordinary-feeds-grid" style={gridVars(settings)}>
+      <div className="ordinary-feeds-grid__items">
         {visible.map((m, ind) =>
           // The create route previews placeholder tiles until a gallery loads.
           typeof m === "number" ? (
             <div
               key={m}
-              className="insta-grid__media w-full bg-gray-300 animate-pulse"
-              style={{ aspectRatio: "var(--insta-aspect)" }}
+              className="ordinary-feeds-grid__media w-full bg-gray-300 animate-pulse"
+              style={{ aspectRatio: "var(--ordinary-feeds-aspect)" }}
             />
           ) : (
             <PostCard
               key={m.id || ind}
               post={m}
               hideCheckbox
-              className="insta-grid__media"
+              className="ordinary-feeds-grid__media"
               autoPlay={settings?.media_auto_play}
+              showProduct={settings?.show_tagged_products ?? true}
               onOpen={() => onPostClick(ind)}
             />
           ),
@@ -67,7 +68,7 @@ export function FeedGrid({ media = [], settings }) {
       </div>
 
       {hasMore && (
-        <div className="insta-grid__more">
+        <div className="ordinary-feeds-grid__more">
           {/*
             Plain button, styled by grid.css at zero specificity. The theme
             extension renders the same markup plus the theme's own button
@@ -76,7 +77,7 @@ export function FeedGrid({ media = [], settings }) {
           */}
           <button
             type="button"
-            className="insta-grid__more-btn"
+            className="ordinary-feeds-grid__more-btn"
             onClick={() => setShownRows((shown) => shown + rows)}
           >
             Load more
@@ -88,6 +89,7 @@ export function FeedGrid({ media = [], settings }) {
         index={openIndex}
         onIndexChange={setOpenIndex}
         username={username}
+        showProducts={settings?.show_tagged_products ?? true}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 // Feed metrics: storefront events sent by the app's web pixel
-// (extensions/insta-pixel), stored raw in Directus `metric_events` and
+// (extensions/ordinary-feeds-pixel), stored raw in Directus `metric_events` and
 // counted per type for the dashboard.
 import { createItem, createItems, readItem, readItems } from "@directus/sdk";
 import directus from "app/directus.server";
@@ -11,16 +11,22 @@ export const METRIC_TYPES = [
   "post_click",
   "product_click",
   "add_to_cart",
+  "purchase",
 ];
 
 export const METRIC_RANGES = [7, 30, 90];
 
-// One request carries one event today; the cap only guards the endpoint.
-const MAX_EVENTS_PER_REQUEST = 20;
+// A request carries one event, or one per attributed line of an order; the
+// cap only guards the endpoint.
+const MAX_EVENTS_PER_REQUEST = 50;
 
 const SHOP_DOMAIN = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const HANDLE = /^[a-z0-9_-]{1,128}$/;
 const PRODUCT_GID = /^gid:\/\/shopify\/Product\/\d{1,20}$/;
+const CURRENCY = /^[A-Z]{3}$/;
+const ORDER_ID = /^[\w:/.-]{1,128}$/;
+// Far above any real order line; anything larger is junk.
+const MAX_LINE_VALUE = 10_000_000;
 
 // The endpoint is public (the pixel can't authenticate), so a shop is only
 // accepted if the app knows it. Cached briefly to keep events cheap.
@@ -52,7 +58,7 @@ const orNull = (value, pattern) =>
 // trusted beyond its shape.
 const toRow = (shop, event) => {
   if (!event || !METRIC_TYPES.includes(event.type)) return null;
-  if (typeof event.id !== "string" || !event.id || event.id.length > 128) {
+  if (typeof event.id !== "string" || !event.id || event.id.length > 256) {
     return null;
   }
   const time = Date.parse(event.timestamp);
@@ -64,6 +70,23 @@ const toRow = (shop, event) => {
     post_id: orNull(event.post_id, HANDLE),
     product_id: orNull(event.product_id, PRODUCT_GID),
     occurred_at: new Date(Number.isNaN(time) ? Date.now() : time).toISOString(),
+    ...(event.type === "purchase" && purchaseFields(event)),
+  };
+};
+
+// Revenue fields, only on `purchase` events: the order line's price after
+// line discounts, in the checkout's currency.
+const purchaseFields = (event) => {
+  const value = Number(event.value);
+  const quantity = Number(event.quantity);
+  return {
+    order_id: orNull(event.order_id, ORDER_ID),
+    value:
+      Number.isFinite(value) && value >= 0 && value <= MAX_LINE_VALUE
+        ? Math.round(value * 100) / 100
+        : 0,
+    currency: orNull(event.currency, CURRENCY),
+    quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : null,
   };
 };
 
@@ -121,4 +144,33 @@ export async function countMetrics(shop, days) {
     if (row.type in counts) counts[row.type] = toCount(row.count);
   }
   return counts;
+}
+
+// Attributed revenue per currency over the last `days` days:
+// `[{ currency, amount, orders }]`, largest first.
+export async function sumRevenue(shop, days) {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await directus.request(
+    readItems(METRIC_EVENTS, {
+      aggregate: { sum: ["value"], countDistinct: ["order_id"] },
+      groupBy: ["currency"],
+      filter: {
+        _and: [
+          { shop: { _eq: shop } },
+          { type: { _eq: "purchase" } },
+          { occurred_at: { _gte: since.toISOString() } },
+        ],
+      },
+      limit: -1,
+    }),
+  );
+
+  return rows
+    .filter((row) => row.currency)
+    .map((row) => ({
+      currency: row.currency,
+      amount: Number(row.sum?.value) || 0,
+      orders: Number(row.countDistinct?.order_id) || 0,
+    }))
+    .sort((a, b) => b.amount - a.amount);
 }

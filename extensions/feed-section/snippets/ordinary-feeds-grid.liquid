@@ -1,0 +1,84 @@
+{%- comment -%}
+  Grid layout for a feed resolved by ordinary-feeds-feed.liquid; same params
+  as the ones it passes. Mirrors app/components/feed-grid.jsx: sizing is all
+  in grid.css, fed by the custom properties on the root.
+{%- endcomment -%}
+{%- liquid
+  # Per-feed settings. Fallbacks mirror GRID_FEED_DEFAULTS in app/lib/feeds.js;
+  # `allow_false` keeps a stored `false` / 0 from being swapped for the default.
+  assign gs_columns = feed_settings.columns | default: 4
+  assign gs_rows = feed_settings.rows | default: 2
+  assign gs_aspect = feed_settings.aspect_ratio | default: '1 / 1'
+  assign gs_overflow = feed_settings.overflow | default: 'load_more'
+  assign gs_media_auto_play = feed_settings.media_auto_play | default: false, allow_false: true
+  assign gs_show_products = feed_settings.show_tagged_products | default: true, allow_false: true
+  assign gs_gap = feed_settings.item_gap | default: 8, allow_false: true
+  assign gs_radius = feed_settings.border_radius | default: 8, allow_false: true
+
+  # One batch is `columns` x `rows` posts — the count at the 1080px design
+  # width; grid.css decides how many actually sit in a row.
+  #   cap        that one batch, nothing more
+  #   expand     every post up to the gallery's limit
+  #   load_more  every post up to the limit, all but the first batch hidden
+  #              until "Load more" reveals them (feed.js, initGrid)
+  assign batch = gs_columns | times: gs_rows
+  assign render_limit = post_limit
+  if gs_overflow == 'cap' and batch < post_limit
+    assign render_limit = batch
+  endif
+
+  assign available = posts.size
+  if available > render_limit
+    assign available = render_limit
+  endif
+  assign has_more = false
+  if gs_overflow == 'load_more' and available > batch
+    assign has_more = true
+  endif
+-%}
+<div
+  id="ordinary-feeds-{{ block.id }}"
+  class="ordinary-feeds-grid"
+  data-ordinary-feeds-root
+  data-ordinary-feeds-grid
+  data-feed-id="{{ feed.system.handle }}"
+  data-batch="{{ batch }}"
+  data-media-auto-play="{{ gs_media_auto_play }}"
+  data-click-action="{{ click_action | escape }}"
+  style="--ordinary-feeds-columns: {{ gs_columns }};--ordinary-feeds-gap: {{ gs_gap }}px;--ordinary-feeds-radius: {{ gs_radius }}px;--ordinary-feeds-aspect: {{ gs_aspect | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ordinary-feeds-grid__items">
+    {% for post in posts limit: render_limit %}
+      {%- liquid
+        assign tile_hidden = false
+        if has_more and forloop.index > batch
+          assign tile_hidden = true
+        endif
+      -%}
+      {% render 'ordinary-feeds-card',
+        post: post,
+      show_products: gs_show_products,
+        item_class: 'ordinary-feeds-grid__item',
+        item_attrs: '',
+        hidden: tile_hidden
+      %}
+    {% endfor %}
+  </div>
+
+  {% if has_more %}
+    <div class="ordinary-feeds-grid__more">
+      {%- comment -%}
+        Also carries the theme's `button` class, so the theme's own button
+        styles win; grid.css only styles it at zero specificity as a fallback.
+      {%- endcomment -%}
+      <button type="button" class="ordinary-feeds-grid__more-btn button" data-ordinary-feeds-load-more>
+        Load more
+      </button>
+    </div>
+  {% endif %}
+
+  {% unless click_action == 'none' %}
+    {% render 'ordinary-feeds-dialog', ig_username: ig_username, ig_avatar: ig_avatar %}
+  {% endunless %}
+</div>

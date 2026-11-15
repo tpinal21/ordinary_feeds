@@ -1,5 +1,5 @@
 // POST /api/metrics/collect: storefront events from the app's web pixel
-// (extensions/insta-pixel). Public and cross-origin: the pixel runs in
+// (extensions/ordinary-feeds-pixel). Public and cross-origin: the pixel runs in
 // Shopify's sandbox and can't authenticate, so the body is validated
 // instead (see recordMetricEvents).
 import { isKnownShop, recordMetricEvents } from "app/lib/metrics.server";

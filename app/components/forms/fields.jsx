@@ -170,11 +170,16 @@ export const GallerySelect = ({ name, page }) => {
 
 // The gallery and playback settings every feed type has, whatever it renders.
 export const MediaSettingsSection = ({ page }) => (
-  <div className="flex flex-col gap-2">
-    <s-heading>Media settings</s-heading>
-    <GallerySelect name="gallery.id" page={page} />
-    <SwitchField name="settings.media_auto_play" label="Video auto play" />
-  </div>
+  <s-section heading="Media settings">
+    <div className="flex flex-col gap-2">
+      <GallerySelect name="gallery.id" page={page} />
+      <SwitchField name="settings.media_auto_play" label="Video auto play" />
+      <SwitchField
+        name="settings.show_tagged_products"
+        label="Show tagged products"
+      />
+    </div>
+  </s-section>
 );
 
 // Both feed types size and space their tiles the same way.

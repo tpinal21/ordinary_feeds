@@ -7,7 +7,6 @@ import {
   APP_SETTINGS_DEFAULTS,
   APP_SETTINGS_KEY,
   CLICK_ACTIONS,
-  POST_TYPES,
 } from "app/lib/app-settings";
 import { getAppSettings } from "app/lib/app-settings.server";
 import {
@@ -116,7 +115,6 @@ export default function Settings() {
           />
         </s-section>
         <FeedDefaultsSection />
-        <PostsSection />
         <PostClicksSection />
 
         <ToolsSection
@@ -297,50 +295,13 @@ function FeedDefaultsSection() {
             />
           )}
         />
-      </s-stack>
-    </s-section>
-  );
-}
-
-function PostsSection() {
-  const { control } = useFormContext();
-
-  return (
-    <s-section
-      heading="Posts"
-      subheading="Choose which Instagram posts your feeds show."
-      className={enter}
-      style={delay(225)}
-    >
-      <s-stack direction="block" gap="base">
         <Controller
           control={control}
-          name="content.post_types"
-          render={({ field }) => (
-            <s-choice-list
-              label="Post types"
-              multiple
-              onChange={(e) => field.onChange(e.currentTarget.values)}
-            >
-              {POST_TYPES.map((type) => (
-                <s-choice
-                  key={type.value}
-                  value={type.value}
-                  selected={!!field.value.includes(type.value)}
-                >
-                  {type.label}
-                </s-choice>
-              ))}
-            </s-choice-list>
-          )}
-        />
-        <Controller
-          control={control}
-          name="content.show_captions"
+          name="feed_defaults.show_tagged_products"
           render={({ field }) => (
             <s-switch
-              label="Show captions"
-              details="Show each post's Instagram caption under it."
+              label="Show tagged products"
+              details="On each post and in the post popup."
               checked={!!field.value}
               onChange={(e) => field.onChange(e.target.checked)}
             />

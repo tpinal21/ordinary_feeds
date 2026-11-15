@@ -1,9 +1,9 @@
 # Forwards the feed's storefront events (published by
-# extensions/feed-section/assets/carousel.js as `insta_feed:*` custom events)
+# extensions/feed-section/assets/feed.js as `ordinary_feeds:*` custom events)
 # to the app's metrics endpoint. Activated per shop by the app with
 # webPixelCreate / webPixelUpdate (app/lib/web-pixel.server.js).
 type = "web_pixel_extension"
-name = "insta-pixel"
+name = "ordinary-feeds-pixel"
 runtime_context = "strict"
 uid = "e0860ff2-8165-b10a-c8d5-0e314946cbe420702f44"
 

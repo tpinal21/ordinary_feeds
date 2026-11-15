@@ -140,7 +140,7 @@ export default function MediaGallery() {
                 />
 
                 <div className="flex flex-col gap-1">
-                  <s-text>Type</s-text>
+                  <s-heading>Type</s-heading>
                   <Controller
                     control={control}
                     name="type"
@@ -148,20 +148,10 @@ export default function MediaGallery() {
                       <div className="flex flex-col gap-1.5">
                         {GALLERY_TYPES.map((g) => (
                           <s-stack key={g.type}>
-                            <label
-                              className={cn(
-                                "choice inline-flex cursor-pointer items-center gap-2 font-semibold",
-                                {
-                                  "disabled opacity-40 cursor-not-allowed":
-                                    g.type === "AUTO",
-                                },
-                              )}
-                              aria-disabled={g.type === "AUTO"}
-                            >
+                            <label className="choice inline-flex cursor-pointer items-center gap-2 font-semibold">
                               <input
                                 type="radio"
                                 className="radio"
-                                disabled={g.type === "AUTO"}
                                 name={field.name}
                                 value={g.type}
                                 checked={field.value == g.type}
@@ -180,11 +170,7 @@ export default function MediaGallery() {
                               />
                               {g.type}
                             </label>
-                            <p
-                              className={cn("pl-6 text-sm text-neutral-500", {
-                                "opacity-50": g.type == "AUTO",
-                              })}
-                            >
+                            <p className="pl-6 text-sm text-neutral-500">
                               {g.description}
                             </p>
                           </s-stack>
@@ -194,24 +180,25 @@ export default function MediaGallery() {
                   />
                 </div>
 
-                <div className="mt-4 flex flex-col gap-2">
-                  <s-heading>Settings</s-heading>
-                  <Controller
-                    control={control}
-                    name="post_limit"
-                    render={({ field }) => (
-                      <s-select
-                        label="Max. posts limit"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.target.value)}
-                      >
-                        {[10, 15, 20].map((num) => (
-                          <s-option value={num}>{num}</s-option>
-                        ))}
-                      </s-select>
-                    )}
-                  />
-                </div>
+                <s-section heading="Settings">
+                  <div className="flex flex-col gap-2">
+                    <Controller
+                      control={control}
+                      name="post_limit"
+                      render={({ field }) => (
+                        <s-select
+                          label="Max. posts limit"
+                          value={field.value}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        >
+                          {[10, 15, 20].map((num) => (
+                            <s-option value={num}>{num}</s-option>
+                          ))}
+                        </s-select>
+                      )}
+                    />
+                  </div>
+                </s-section>
               </s-section>
             </div>
             <div className={`w-full ${enter}`} style={delay(200)}>

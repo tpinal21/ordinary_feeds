@@ -46,6 +46,8 @@ export default function PostCard({
   showTagProducts = false,
   onTagProduct,
   autoPlay = false,
+  // The feed's "Show tagged products": off hides the product bar.
+  showProduct = true,
   checkBoxDisabled = false,
   // Given, a click opens the post (the feed's PostDialog) instead of
   // toggling playback.
@@ -172,7 +174,7 @@ export default function PostCard({
           </>
         )}
         <div
-          style={{ aspectRatio: "var(--insta-aspect, 9 / 16)" }}
+          style={{ aspectRatio: "var(--ordinary-feeds-aspect, 9 / 16)" }}
           className="relative w-full"
         >
           {post?.thumbnail_url && (
@@ -250,8 +252,8 @@ export default function PostCard({
         // while a carousel slide stays tall — same custom properties the theme
         // extension sets from Liquid. The fallbacks are the carousel's.
         style={{
-          aspectRatio: "var(--insta-aspect, 9 / 16)",
-          objectFit: "var(--insta-fit, contain)",
+          aspectRatio: "var(--ordinary-feeds-aspect, 9 / 16)",
+          objectFit: "var(--ordinary-feeds-fit, contain)",
         }}
         className="h-auto w-full group-hover/post-card:brightness-100 transition-all brightness-75"
       />
@@ -283,7 +285,7 @@ export default function PostCard({
           />
         )}
       </button>
-      {inFeed && !showTagProducts && taggedProduct && (
+      {inFeed && showProduct && !showTagProducts && taggedProduct && (
         <FeedProductBar
           product={taggedProduct}
           more={(post.products?.length ?? 1) - 1}
@@ -328,7 +330,7 @@ export default function PostCard({
 }
 
 // Preview of the storefront slide's tagged product bar (see
-// .insta-carousel__product in the theme's carousel.css). Price and cart only
+// .ordinary-feeds-card__product in the theme's feed.css). Price and cart only
 // exist on the storefront, so the cart button here does nothing.
 const FeedProductBar = ({ product, more }) => (
   <div

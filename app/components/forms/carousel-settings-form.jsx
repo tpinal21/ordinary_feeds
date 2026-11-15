@@ -28,78 +28,78 @@ export default function CarouselSettingsForm({ page }) {
     <>
       <MediaSettingsSection page={page} />
 
-      <div className="flex flex-col gap-2">
-        <s-heading>Carousel settings</s-heading>
-
-        <SettingRow label="Auto scroll">
-          <Controller
-            name="settings.auto_scroll"
-            control={control}
-            render={({ field }) => (
-              <s-switch
-                {...field}
-                checked={field.value}
-                accessibilitylabel="Auto scroll switch"
-                onChange={(checked) => {
-                  const checkedValue = checked.target.checked;
-                  field.onChange(checkedValue);
-                  // Auto scroll only reads well as an endless strip.
-                  if (checkedValue) {
-                    setValue("settings.loop", true, { shouldDirty: true });
-                  } else {
-                    resetField("settings.loop", { keepDirty: false });
-                  }
-                }}
-              />
-            )}
-          />
-        </SettingRow>
-
-        {autoScroll && (
-          <SettingRow label="Speed">
+      <s-section heading="Carousel settings">
+        <div className="flex flex-col gap-2">
+          <SettingRow label="Auto scroll">
             <Controller
-              name="settings.speed"
+              name="settings.auto_scroll"
               control={control}
-              render={({ field: { ref, onChange, ...field } }) => (
-                <Slider
-                  className="max-w-56"
-                  min={0.1}
-                  max={1}
-                  step={0.1}
+              render={({ field }) => (
+                <s-switch
                   {...field}
-                  onValueChange={onChange}
+                  checked={field.value}
+                  accessibilitylabel="Auto scroll switch"
+                  onChange={(checked) => {
+                    const checkedValue = checked.target.checked;
+                    field.onChange(checkedValue);
+                    // Auto scroll only reads well as an endless strip.
+                    if (checkedValue) {
+                      setValue("settings.loop", true, { shouldDirty: true });
+                    } else {
+                      resetField("settings.loop", { keepDirty: false });
+                    }
+                  }}
                 />
               )}
             />
           </SettingRow>
-        )}
 
-        <SettingRow label="Loop slides">
-          <Controller
-            name="settings.loop"
-            control={control}
-            disabled={!!autoScroll}
-            render={({ field }) => (
-              <s-switch
-                {...field}
-                checked={field.value}
-                accessibilitylabel="Loop switch"
-                disabled={field.disabled}
-                onChange={(checked) => field.onChange(checked.target.checked)}
+          {autoScroll && (
+            <SettingRow label="Speed">
+              <Controller
+                name="settings.speed"
+                control={control}
+                render={({ field: { ref, onChange, ...field } }) => (
+                  <Slider
+                    className="max-w-56"
+                    min={0.1}
+                    max={1}
+                    step={0.1}
+                    {...field}
+                    onValueChange={onChange}
+                  />
+                )}
               />
-            )}
+            </SettingRow>
+          )}
+
+          <SettingRow label="Loop slides">
+            <Controller
+              name="settings.loop"
+              control={control}
+              disabled={!!autoScroll}
+              render={({ field }) => (
+                <s-switch
+                  {...field}
+                  checked={field.value}
+                  accessibilitylabel="Loop switch"
+                  disabled={field.disabled}
+                  onChange={(checked) => field.onChange(checked.target.checked)}
+                />
+              )}
+            />
+          </SettingRow>
+
+          <SelectField
+            name="settings.slides_per_view"
+            label="Slides per view"
+            tooltip={PER_VIEW_TOOLTIP}
+            options={[3, 4, 5, 6, 7, 8]}
           />
-        </SettingRow>
 
-        <SelectField
-          name="settings.slides_per_view"
-          label="Slides per view"
-          tooltip={PER_VIEW_TOOLTIP}
-          options={[3, 4, 5, 6, 7, 8]}
-        />
-
-        <AppearanceFields />
-      </div>
+          <AppearanceFields />
+        </div>
+      </s-section>
     </>
   );
 }

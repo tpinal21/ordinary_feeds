@@ -1,0 +1,155 @@
+{%- comment -%}
+  Resolves the feed a block shows and renders it, or, in the theme editor, a
+  note saying why it can't. Shared by every feed block so the lookup rules
+  stay the same for each type.
+
+  Params:
+    block      the app block (its `feed` setting and shopify_attributes)
+    feed_type  CAROUSEL | GRID — the feed type this block lays out
+{%- endcomment -%}
+{%- liquid
+  # The merchant types a feed label from the app (e.g. CAROUSEL_HP_01) in the
+  # block settings; its gallery reference resolves straight to the posts.
+  # `$app:feed` isn't accepted in Liquid lookups, hence the full type name.
+  # Liquid only exposes the first 50 entries, far more feeds than a shop has.
+  assign feed_label = block.settings.feed | strip | upcase
+  assign feed = nil
+  assign wrong_page_feed = nil
+  assign wrong_type_feed = nil
+  assign type_name = feed_type | downcase
+
+  # The feed page this template serves. A feed only renders on its own page
+  # type — a home page feed never shows on a product page, and so on.
+  case template.name
+    when 'index'
+      assign feed_page = 'HOME_PAGE'
+      assign page_code = 'HP'
+    when 'product'
+      assign feed_page = 'PRODUCT_PAGE'
+      assign page_code = 'PP'
+    when 'collection'
+      assign feed_page = 'COLLECTION_PAGE'
+      assign page_code = 'CP'
+  endcase
+
+  # Left empty: this page's first feed of this type. Labels are generated as
+  # <TYPE>_<PAGE>_<NN> (app/routes/api.feeds.jsx), so it's `_01` for the page.
+  if feed_label == blank and page_code != blank
+    assign feed_label = feed_type | append: '_' | append: page_code | append: '_01'
+  endif
+
+  # Documented global is `metaobjects`, not `shop.metaobjects`.
+  assign feed_entries = metaobjects['app--393150267393--feed'].values
+
+  if feed_label != blank
+    for candidate in feed_entries
+      # Handle match: blocks saved while this setting was a metaobject picker
+      # still hold the feed's handle instead of its label.
+      assign candidate_handle = candidate.system.handle | upcase
+      if candidate.label.value == feed_label or candidate_handle == feed_label
+        if candidate.type.value != feed_type
+          assign wrong_type_feed = candidate
+        elsif candidate.page.value != feed_page
+          assign wrong_page_feed = candidate
+        else
+          assign feed = candidate
+        endif
+        break
+      endif
+    endfor
+  endif
+
+  # PRODUCT galleries hold no posts of their own: they show the posts the
+  # current product is tagged in, kept on the product by the app
+  # (app/lib/product-post-metafields.server.js). Off a product page
+  # `product` is nil, so they render nothing.
+  assign gallery = feed.gallery.value
+  if gallery.type.value == 'PRODUCT'
+    assign posts = product.metafields["$app"].instagram_posts.value
+  else
+    assign posts = gallery.posts.value
+  endif
+  assign post_limit = gallery.post_limit.value | default: 20
+
+  # App-wide settings (the Settings page).
+  assign app_settings = shop.metafields["$app"].settings.value
+
+  # Settings page → Post clicks: popup | instagram | product | none.
+  # Falls back like CLICK_ACTIONS' default in app/lib/app-settings.js.
+  assign click_action = app_settings.click.action | default: 'popup'
+-%}
+
+{% if feed == blank or posts == blank or posts.size == 0 %}
+  {% if request.design_mode %}
+    <p class="ordinary-feeds-placeholder" {{ block.shopify_attributes }}>
+      {% if feed_page == blank %}
+        Feeds can only be added to the home, product and collection pages.
+      {% elsif wrong_type_feed %}
+        {{ wrong_type_feed.label.value }} is a
+        {{ wrong_type_feed.type.value | downcase }} feed. This block shows
+        {{ type_name }} feeds — use the matching block, or a {{ type_name }}
+        feed's label.
+      {% elsif wrong_page_feed %}
+        {{ wrong_page_feed.label.value }} is a
+        {{ wrong_page_feed.page.value | replace: '_', ' ' | downcase }} feed and
+        can't be used on this page. Use a feed created for this page in the app.
+      {% elsif feed == blank %}
+        {% if feed_entries.size > 0 %}
+          {%- liquid
+            assign page_labels = ''
+            for candidate in feed_entries
+              if candidate.page.value == feed_page and candidate.type.value == feed_type
+                assign page_labels = page_labels | append: candidate.label.value | append: ', '
+              endif
+            endfor
+            assign page_labels = page_labels | remove_last: ', '
+          -%}
+          No {{ type_name }} feed called "{{ feed_label }}" for this page. Check
+          the label in the app.
+          {% if page_labels != blank %}({{ type_name | capitalize }} feeds for this page: {{ page_labels }}){% endif %}
+        {% else %}
+          No feeds available to this block. The app's feeds aren't readable
+          here yet (check the feed metaobject type and its storefront access).
+        {% endif %}
+      {% else %}
+        {% if gallery.type.value == 'PRODUCT' %}
+          This product isn't tagged in any Instagram post yet. Tag it from
+          Manage posts in the app.
+        {% else %}
+          The selected feed has no posts yet.
+        {% endif %}
+      {% endif %}
+    </p>
+  {% endif %}
+{% elsif app_settings.storefront_enabled != false %}
+  {%- liquid
+    # Written by the app when the feed is saved; shown in the post dialog.
+    assign feed_settings = feed.settings.value
+    assign ig_username = feed_settings.instagram_username
+    assign ig_avatar = feed_settings.instagram_profile_picture
+  -%}
+  {% case feed_type %}
+    {% when 'CAROUSEL' %}
+      {% render 'ordinary-feeds-carousel',
+        block: block,
+        feed: feed,
+        feed_settings: feed_settings,
+        posts: posts,
+        post_limit: post_limit,
+        click_action: click_action,
+        ig_username: ig_username,
+        ig_avatar: ig_avatar
+      %}
+    {% when 'GRID' %}
+      {% render 'ordinary-feeds-grid',
+        block: block,
+        feed: feed,
+        feed_settings: feed_settings,
+        posts: posts,
+        post_limit: post_limit,
+        click_action: click_action,
+        ig_username: ig_username,
+        ig_avatar: ig_avatar
+      %}
+  {% endcase %}
+{% endif %}

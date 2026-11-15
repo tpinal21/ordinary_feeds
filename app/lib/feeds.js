@@ -53,6 +53,9 @@ export const feedCreateWindowId = (type, page) => `${type}_${page}`;
 // through — a feed saved before a setting existed still renders with it.
 const MEDIA_DEFAULTS = {
   media_auto_play: false,
+  // Tagged products on each post card and in the post popup's
+  // "Shop this post". Off shows the posts alone.
+  show_tagged_products: true,
   // Both in px.
   border_radius: 8,
   item_gap: 8,

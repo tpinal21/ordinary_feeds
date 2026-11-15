@@ -1,0 +1,203 @@
+{%- comment -%}
+  One post in a feed block — the same card in the carousel and the grid.
+  Mirrors app/components/post-card.jsx; feed.js wires its video, mute button
+  and tagged-product bar.
+
+  Params:
+    post        the post metaobject
+    item_class  the layout's class for the item (slide or tile)
+    item_attrs  extra attributes for the item, e.g. ARIA roles
+    hidden      true to render it hidden (the grid's "Load more")
+    show_products  false hides the tagged products, on the card and in the
+                   post dialog (the feed's "Show tagged products")
+{%- endcomment -%}
+{%- liquid
+  assign media_url = post.media_url.value
+  assign poster = post.thumbnail_url.value | default: media_url
+  assign alt_text = post.caption.value | default: 'Instagram post' | strip_html | truncate: 80
+
+  # The tagged products list doesn't answer `.first` (it comes back
+  # empty), but it iterates fine, so take the first one with a loop.
+  assign card_products = post.products.value
+  assign card_product = nil
+  for tagged_product in card_products limit: 1
+    assign card_product = tagged_product
+  endfor
+-%}
+<div
+  class="ordinary-feeds-card {{ item_class }}"
+  {{ item_attrs }}
+  {% if hidden %}hidden{% endif %}
+  data-ordinary-feeds-card
+  data-post-id="{{ post.system.handle }}"
+  data-src="{{ media_url | escape }}"
+  data-poster="{{ poster | escape }}"
+  data-permalink="{{ post.permalink.value | escape }}"
+  data-likes="{{ post.like_count.value }}"
+  data-product-url="{{ card_product.url }}"
+>
+  <div class="ordinary-feeds-card__media">
+    <video
+      class="ordinary-feeds-card__video"
+      data-ordinary-feeds-video
+      src="{{ media_url }}"
+      poster="{{ poster }}"
+      aria-label="{{ alt_text | escape }}"
+      muted
+      loop
+      playsinline
+      preload="none"
+    ></video>
+
+    <div class="ordinary-feeds-card__progress"><div class="ordinary-feeds-card__progress-bar" data-ordinary-feeds-progress></div></div>
+
+    <button type="button" class="ordinary-feeds-card__mute" data-ordinary-feeds-mute aria-label="Unmute video">
+      <svg class="ordinary-feeds-card__icon ordinary-feeds-card__icon--muted" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M12 4L9.91 6.09L12 8.18M4.27 3L3 4.27L7.73 9H3v6h4l5 5v-6.73l4.25 4.26c-.67.51-1.42.93-2.25 1.17v2.07c1.38-.32 2.63-.95 3.68-1.81L19.73 21L21 19.73l-9-9M19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.9 8.9 0 0 0 21 12c0-4.28-3-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71m-2.5 0c0-1.77-1-3.29-2.5-4.03v2.21l2.45 2.45c.05-.2.05-.42.05-.63"/>
+      </svg>
+      <svg class="ordinary-feeds-card__icon ordinary-feeds-card__icon--unmuted" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M3 9h4l5-5v16l-5-5H3V9zm18 3a9.003 9.003 0 0 1-7 8.777V18.71a7.003 7.003 0 0 0 0-13.42V3.223c4.008.91 7 4.494 7 8.777zm-4 0a5.001 5.001 0 0 1-3 4.584V7.416c1.766.772 3 2.534 3 4.584z"/>
+      </svg>
+    </button>
+
+    {%- comment -%}
+      The first tagged product, shown on hover. The rest are in the
+      post dialog; "+N" says how many more there are.
+    {%- endcomment -%}
+    {% if card_product and show_products != false %}
+      <div class="ordinary-feeds-card__product">
+        <a
+          class="ordinary-feeds-card__product-link"
+          href="{{ card_product.url }}"
+          data-ordinary-feeds-product-link
+          data-ordinary-feeds-post="{{ post.system.handle }}"
+          data-ordinary-feeds-product="{{ card_product.id }}"
+        >
+          <span class="ordinary-feeds-card__product-image">
+            {% if card_product.featured_image %}
+              <img
+                src="{{ card_product.featured_image | image_url: width: 96 }}"
+                alt=""
+                width="32"
+                height="32"
+                loading="lazy"
+              >
+            {% endif %}
+          </span>
+          <span class="ordinary-feeds-card__product-info">
+            <span class="ordinary-feeds-card__product-title">{{ card_product.title | escape }}</span>
+            <span class="ordinary-feeds-card__product-price">
+              {%- if card_product.available -%}
+                {{- card_product.price | money -}}
+              {%- else -%}
+                Sold out
+              {%- endif -%}
+            </span>
+          </span>
+        </a>
+        {% if card_products.size > 1 %}
+          <span class="ordinary-feeds-card__product-more">+{{ card_products.size | minus: 1 }}</span>
+        {% endif %}
+        {% if card_product.available %}
+          <button
+            type="button"
+            class="ordinary-feeds-card__product-add"
+            data-ordinary-feeds-add-to-cart="{{ card_product.selected_or_first_available_variant.id }}"
+            data-ordinary-feeds-post="{{ post.system.handle }}"
+            data-ordinary-feeds-product="{{ card_product.id }}"
+            aria-label="Add {{ card_product.title | escape }} to cart"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          </button>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  {%- comment -%}
+    What the post dialog shows beside the video; feed.js copies it
+    in when this post is opened.
+  {%- endcomment -%}
+  <template data-ordinary-feeds-details>
+    {% if post.caption.value != blank %}
+      <button type="button" class="ordinary-feeds-dialog__caption" data-ordinary-feeds-caption>
+        {{- post.caption.value | escape | newline_to_br -}}
+      </button>
+    {% endif %}
+    {%- assign tagged = post.products.value -%}
+    {% if show_products != false and tagged.size > 0 %}
+      <div class="ordinary-feeds-dialog__products">
+        <span class="ordinary-feeds-dialog__products-heading">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          Shop this post
+          {% if tagged.size > 1 %}<span class="ordinary-feeds-dialog__products-count">({{ tagged.size }})</span>{% endif %}
+        </span>
+        <div class="ordinary-feeds-dialog__product-list">
+          {% for product in tagged %}
+            {%- comment -%}
+              A <div>, not an <a>: a button can't sit inside a link.
+              The title link is stretched over the whole card instead.
+            {%- endcomment -%}
+            <div class="ordinary-feeds-dialog__product">
+              <span class="ordinary-feeds-dialog__product-image">
+                {% if product.featured_image %}
+                  <img
+                    src="{{ product.featured_image | image_url: width: 160 }}"
+                    alt=""
+                    width="56"
+                    height="56"
+                    loading="lazy"
+                  >
+                {% endif %}
+              </span>
+              <span class="ordinary-feeds-dialog__product-info">
+                <a
+                  class="ordinary-feeds-dialog__product-title"
+                  href="{{ product.url }}"
+                  data-ordinary-feeds-post="{{ post.system.handle }}"
+                  data-ordinary-feeds-product="{{ product.id }}"
+                >{{ product.title | escape }}</a>
+                {%- comment -%}
+                  Live from Shopify: `price` is the cheapest variant,
+                  hence "From" when variants differ.
+                {%- endcomment -%}
+                <span class="ordinary-feeds-dialog__product-price">
+                  {%- if product.price_varies -%}
+                    <span class="ordinary-feeds-dialog__product-from">From</span>
+                  {%- endif -%}
+                  <span class="ordinary-feeds-dialog__product-amount{% if product.compare_at_price > product.price %} is-sale{% endif %}">
+                    {{- product.price | money -}}
+                  </span>
+                  {%- if product.compare_at_price > product.price -%}
+                    <s>{{ product.compare_at_price | money }}</s>
+                  {%- endif -%}
+                  {%- unless product.available -%}
+                    <span class="ordinary-feeds-dialog__product-soldout">Sold out</span>
+                  {%- endunless -%}
+                </span>
+              </span>
+              {%- comment -%}
+                Straight to cart only when there's nothing to choose;
+                products with options go to their page via the card.
+              {%- endcomment -%}
+              {% if product.available %}
+                <button
+                  type="button"
+                  class="ordinary-feeds-dialog__product-add"
+                  data-ordinary-feeds-add-to-cart="{{ product.selected_or_first_available_variant.id }}"
+                  data-ordinary-feeds-post="{{ post.system.handle }}"
+                  data-ordinary-feeds-product="{{ product.id }}"
+                  aria-label="Add {{ product.title | escape }} to cart"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                </button>
+              {% else %}
+                <svg class="ordinary-feeds-dialog__product-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </template>
+</div>

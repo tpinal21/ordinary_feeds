@@ -62,7 +62,7 @@ const Avatar = () => {
 };
 
 // What clicking a post in a feed preview does, from Settings → Post clicks
-// (`click.action`), mirroring the theme extension's carousel.js: each action
+// (`click.action`), mirroring the theme extension's feed.js: each action
 // falls back to the next one the post supports, product -> Instagram ->
 // popup. In the admin, "product" opens the product in the Shopify admin (the
 // preview has no storefront URL for it). Returns `(index) => void`, where
@@ -181,9 +181,9 @@ const ProductList = ({ products, row }) => (
 
 // Account, caption and tagged products. Sits left of the video on wide
 // screens and over its bottom edge on narrow ones (`row`).
-const PostInfo = ({ post, username, row, className }) => {
+const PostInfo = ({ post, username, row, showProducts, className }) => {
   const [expanded, setExpanded] = useState(false);
-  const products = taggedProducts(post);
+  const products = showProducts ? taggedProducts(post) : [];
 
   return (
     <div className={cn("flex flex-col gap-3 text-white", className)}>
@@ -358,9 +358,17 @@ const Stage = ({ post, muted, onToggleMute }) => {
 
 // Full-screen, reels-style viewer for a feed's posts: the video in the
 // middle, account and caption to its left, actions to its right and
-// previous / next on the far right. The theme extension's carousel.js builds
+// previous / next on the far right. The theme extension's feed.js builds
 // the same layout from carousel.css.
-export function PostDialog({ posts, index, onIndexChange, username }) {
+// `showProducts` is the feed's "Show tagged products": off drops "Shop this
+// post" from the popup.
+export function PostDialog({
+  posts,
+  index,
+  onIndexChange,
+  username,
+  showProducts = true,
+}) {
   const [muted, setMuted] = useState(false);
   const [api, setApi] = useState(null);
   const open = index != null;
@@ -435,6 +443,7 @@ export function PostDialog({ posts, index, onIndexChange, username }) {
                 key={`info-${post.id}`}
                 post={post}
                 username={username}
+                showProducts={showProducts}
                 className="hidden w-64 max-w-full justify-self-end pb-2 md:flex"
               />
 
@@ -452,6 +461,7 @@ export function PostDialog({ posts, index, onIndexChange, username }) {
                     key={`info-sm-${post.id}`}
                     post={post}
                     username={username}
+                    showProducts={showProducts}
                     row
                     className="pointer-events-auto pr-14"
                   />

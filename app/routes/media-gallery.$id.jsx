@@ -130,22 +130,26 @@ export default function MediaGallery() {
                         .description
                     }
                   </div>
-                  <s-heading>Settings</s-heading>
-                  <Controller
-                    control={control}
-                    name="post_limit"
-                    render={({ field }) => (
-                      <s-select
-                        label="Posts limit"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.target.value)}
-                      >
-                        {[10, 15, 20].map((num) => (
-                          <s-option value={num}>{num}</s-option>
-                        ))}
-                      </s-select>
-                    )}
-                  />
+
+                  <s-section heading="Settings">
+                    <div className="flex flex-col gap-2">
+                      <Controller
+                        control={control}
+                        name="post_limit"
+                        render={({ field }) => (
+                          <s-select
+                            label="Posts limit"
+                            value={field.value}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
+                            {[10, 15, 20].map((num) => (
+                              <s-option value={num}>{num}</s-option>
+                            ))}
+                          </s-select>
+                        )}
+                      />
+                    </div>
+                  </s-section>
                 </s-section>
               </div>
             </div>

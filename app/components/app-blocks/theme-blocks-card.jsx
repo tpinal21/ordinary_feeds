@@ -10,6 +10,9 @@ import { useOutletContext } from "react-router";
 const STATUSES = {
   ok: { tone: "success", label: "Live" },
   disabled: { tone: "neutral", label: "Hidden" },
+  // Left on the page's default label, and no feed has it — typically the
+  // feed was deleted in the app while its block stayed in the theme.
+  awaiting_feed: { tone: "warning", label: "No feed" },
   unassigned: { tone: "warning", label: "No feed label" },
   orphaned: { tone: "warning", label: "Feed not found" },
   wrong_page: { tone: "warning", label: "Other page's feed" },
@@ -27,23 +30,44 @@ const sortTemplates = (a, b) => {
   return rank(a) - rank(b) || a.localeCompare(b);
 };
 
-const BlockNode = ({ placement }) => {
+// Blocks that render nothing on the storefront. They still take up a spot
+// in the theme, so tell the merchant how to clear them.
+const EMPTY_STATUSES = new Set(["awaiting_feed", "orphaned", "unassigned"]);
+
+const BlockNode = ({ id, placement }) => {
   const status = STATUSES[placement.status];
+  const empty = EMPTY_STATUSES.has(placement.status);
+  const tipId = `theme-block-help-${id}`;
   return (
-    <li className="flex items-center gap-2 min-h-8 pl-3">
+    <li className="flex items-center gap-2 min-h-7 pl-3">
       <div className="flex items-center gap-1.5 min-w-0">
         <s-text type="strong">
           {placement.feedLabel ? `${placement.feedLabel}` : "No feed label"}
         </s-text>
       </div>
       {status && <s-badge tone={status.tone}>{status.label}</s-badge>}
+      {empty && (
+        <>
+          <button
+            type="button"
+            interestfor={tipId}
+            aria-label="Why this block shows nothing"
+            className="inline-flex cursor-help"
+          >
+            <s-icon type="info" tone="auto" color="subdued" />
+          </button>
+          <s-tooltip id={tipId}>
+            Shows nothing on your store. Remove this block in the theme editor.
+          </s-tooltip>
+        </>
+      )}
     </li>
   );
 };
 
 const PageNode = ({ shop, template, placements }) => (
   <li>
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex items-center justify-between gap-2 mb-2">
       <s-heading variant="headingMd">{templateLabel(template)}</s-heading>
       <s-link href={themeCustomizeUrl({ shop, template })} target="_blank">
         Edit
@@ -51,7 +75,7 @@ const PageNode = ({ shop, template, placements }) => (
     </div>
     <ul>
       {placements.map((placement, i) => (
-        <BlockNode key={i} placement={placement} />
+        <BlockNode key={i} id={`${template}-${i}`} placement={placement} />
       ))}
     </ul>
   </li>

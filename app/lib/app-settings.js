@@ -11,12 +11,6 @@ import {
 // storefront block reads them straight from Liquid. Per-feed settings stay on
 // the feed itself; these only seed new feeds.
 
-export const POST_TYPES = [
-  { value: "IMAGE", label: "Photos" },
-  { value: "VIDEO", label: "Videos and reels" },
-  { value: "CAROUSEL_ALBUM", label: "Carousel posts" },
-];
-
 // SWR key for the shop's settings (GET /api/settings).
 export const APP_SETTINGS_KEY = "/api/settings";
 
@@ -31,14 +25,11 @@ export const APP_SETTINGS_DEFAULTS = {
   storefront_enabled: true,
   feed_defaults: {
     media_auto_play: GRID_FEED_DEFAULTS.media_auto_play,
+    show_tagged_products: GRID_FEED_DEFAULTS.show_tagged_products,
     border_radius: GRID_FEED_DEFAULTS.border_radius,
     item_gap: GRID_FEED_DEFAULTS.item_gap,
     columns: GRID_FEED_DEFAULTS.columns,
     rows: GRID_FEED_DEFAULTS.rows,
-  },
-  content: {
-    post_types: POST_TYPES.map((t) => t.value),
-    show_captions: false,
   },
   click: {
     action: "popup",
@@ -59,14 +50,7 @@ const toBool = (value, fallback) =>
 export function appSettings(raw) {
   const d = APP_SETTINGS_DEFAULTS;
   const feed = raw?.feed_defaults ?? {};
-  const content = raw?.content ?? {};
   const click = raw?.click ?? {};
-
-  const postTypes = Array.isArray(content.post_types)
-    ? POST_TYPES.map((t) => t.value).filter((v) =>
-        content.post_types.includes(v),
-      )
-    : d.content.post_types;
 
   return {
     storefront_enabled: toBool(raw?.storefront_enabled, d.storefront_enabled),
@@ -74,6 +58,10 @@ export function appSettings(raw) {
       media_auto_play: toBool(
         feed.media_auto_play,
         d.feed_defaults.media_auto_play,
+      ),
+      show_tagged_products: toBool(
+        feed.show_tagged_products,
+        d.feed_defaults.show_tagged_products,
       ),
       border_radius: toInt(
         feed.border_radius,
@@ -94,10 +82,6 @@ export function appSettings(raw) {
         GRID_ROWS.at(-1),
         d.feed_defaults.rows,
       ),
-    },
-    content: {
-      post_types: postTypes,
-      show_captions: toBool(content.show_captions, d.content.show_captions),
     },
     click: {
       action: CLICK_ACTIONS.some((a) => a.value === click.action)

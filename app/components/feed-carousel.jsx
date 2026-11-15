@@ -20,9 +20,9 @@ import { useEffect, useState } from "react";
 // keeps this layout identical to the theme extension, which sets the very same
 // properties from Liquid.
 const carouselVars = (settings) => ({
-  "--insta-per-view": settings?.slides_per_view || 1,
-  "--insta-gap": `${settings?.item_gap ?? 0}px`,
-  "--insta-radius": `${settings?.border_radius ?? 0}px`,
+  "--ordinary-feeds-per-view": settings?.slides_per_view || 1,
+  "--ordinary-feeds-gap": `${settings?.item_gap ?? 0}px`,
+  "--ordinary-feeds-radius": `${settings?.border_radius ?? 0}px`,
 });
 
 export function FeedCarousel({ media = [], settings }) {
@@ -74,7 +74,7 @@ export function FeedCarousel({ media = [], settings }) {
 
   return (
     <Carousel
-      className="insta-carousel"
+      className="ordinary-feeds-carousel"
       style={carouselVars(settings)}
       opts={{ loop: settings?.loop, dragFree: settings?.auto_scroll }}
       setApi={setApi}
@@ -91,15 +91,19 @@ export function FeedCarousel({ media = [], settings }) {
     >
       <CarouselContent className="ml-0 justify-center-safe">
         {media.map((m, ind) => (
-          <CarouselItem key={m.id || ind} className="insta-carousel__slide">
+          <CarouselItem
+            key={m.id || ind}
+            className="ordinary-feeds-carousel__slide"
+          >
             {typeof m == "number" ? (
-              <div className="insta-carousel__media w-full aspect-9/16 bg-gray-300 animate-pulse"></div>
+              <div className="ordinary-feeds-carousel__media w-full aspect-9/16 bg-gray-300 animate-pulse"></div>
             ) : (
               <PostCard
                 post={m}
                 hideCheckbox
-                className="insta-carousel__media"
+                className="ordinary-feeds-carousel__media"
                 autoPlay={settings?.media_auto_play}
+                showProduct={settings?.show_tagged_products ?? true}
                 onOpen={() => onPostClick(posts.indexOf(m))}
               />
             )}
@@ -117,6 +121,7 @@ export function FeedCarousel({ media = [], settings }) {
         index={openIndex}
         onIndexChange={setOpenIndex}
         username={username}
+        showProducts={settings?.show_tagged_products ?? true}
       />
     </Carousel>
   );

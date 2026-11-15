@@ -1,0 +1,867 @@
+/**
+ * Shared by every feed block (carousel.liquid, grid.liquid): the post card
+ * (snippets/ordinary-feeds-card.liquid) and the post dialog
+ * (snippets/ordinary-feeds-dialog.liquid). Layout lives in each block's own
+ * stylesheet. Cards read --ordinary-feeds-radius, and --ordinary-feeds-aspect /
+ * --ordinary-feeds-fit when the layout sets them, from the block root.
+ */
+
+/* Shopify wraps every app block in <div class="shopify-app-block">, and that
+   wrapper is what the section lays out. In a column flex section with
+   `align-items: flex-start` (Horizon-style themes) it shrinks to its
+   content, and a feed's content width is 0 (inline-size containment) — so the
+   whole block collapsed to nothing. Make the wrapper fill the section in every
+   layout:
+     - block / row flex:            width: 100%
+     - column flex, align start:    align-self: stretch
+     - grid:                        justify-self: stretch
+   `flex` is deliberately left alone: in a column it would set the height. */
+.shopify-app-block:has(> [data-ordinary-feeds-root]) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+/* Card look mirrors app/components/post-card.jsx. */
+.ordinary-feeds-card__media {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d4d4d4;
+  border-radius: var(--ordinary-feeds-radius);
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+/* "Do nothing" on click: don't promise a click. */
+[data-click-action="none"] .ordinary-feeds-card__media {
+  cursor: default;
+}
+
+.ordinary-feeds-card__video {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Carousel slides are tall and letterboxed; the grid sets its own tile
+     shape and fills it (grid.css). */
+  aspect-ratio: var(--ordinary-feeds-aspect, 9 / 16);
+  object-fit: var(--ordinary-feeds-fit, contain);
+  filter: brightness(0.75);
+  transition: filter 150ms ease;
+}
+
+.ordinary-feeds-card__media:hover .ordinary-feeds-card__video {
+  filter: brightness(1);
+}
+
+.ordinary-feeds-card__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.ordinary-feeds-card__progress-bar {
+  width: 0;
+  height: 100%;
+  background: #fff;
+  transition: width 150ms ease;
+}
+
+.ordinary-feeds-card__mute {
+  position: absolute;
+  z-index: 1;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(82, 82, 82, 0.2);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.ordinary-feeds-card__media:hover .ordinary-feeds-card__mute {
+  opacity: 1;
+}
+
+/* Tagged product bar along the bottom of the card, shown on hover. Mirrors
+   the showTagProducts bar in app/components/post-card.jsx. */
+.ordinary-feeds-card__product {
+  position: absolute;
+  z-index: 1;
+  left: 6px;
+  right: 6px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  color: #111;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 150ms ease, transform 150ms ease;
+  cursor: default;
+}
+
+.ordinary-feeds-card__media:hover .ordinary-feeds-card__product,
+.ordinary-feeds-card__product:focus-within {
+  opacity: 1;
+  transform: none;
+}
+
+.ordinary-feeds-card__product-link {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ordinary-feeds-card__product-image {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #f5f5f5;
+}
+
+.ordinary-feeds-card__product-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ordinary-feeds-card__product-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.ordinary-feeds-card__product-title {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ordinary-feeds-card__product-link:hover .ordinary-feeds-card__product-title {
+  text-decoration: underline;
+}
+
+.ordinary-feeds-card__product-price {
+  font-size: 11px;
+  color: #555;
+}
+
+.ordinary-feeds-card__product-more {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+}
+
+.ordinary-feeds-card__product-add {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.ordinary-feeds-card__product-add:hover {
+  transform: scale(1.06);
+}
+
+.ordinary-feeds-card__product-add:disabled {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
+}
+
+.ordinary-feeds-card__product-add svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* No hover on touch screens: keep the mute button and product bar visible. */
+@media (hover: none) {
+  .ordinary-feeds-card__mute,
+  .ordinary-feeds-card__product {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ordinary-feeds-card__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Show the muted icon by default; swap to unmuted when the card is unmuted. */
+.ordinary-feeds-card__icon--unmuted {
+  display: none;
+}
+
+.ordinary-feeds-card.is-unmuted .ordinary-feeds-card__icon--muted {
+  display: none;
+}
+
+.ordinary-feeds-card.is-unmuted .ordinary-feeds-card__icon--unmuted {
+  display: block;
+}
+
+/* ---------------------------------------------------------------------------
+ * Post dialog. Mirrors app/components/post-dialog.jsx (built on the app's
+ * shadcn Dialog): full-screen dark overlay, video in the middle, account and
+ * caption on its left, actions on its right, previous / next on the far right.
+ * Narrow screens move the caption over the video's bottom edge.
+ * ------------------------------------------------------------------------- */
+.ordinary-feeds-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(10, 10, 10, 0.95);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  overflow: hidden;
+}
+
+.ordinary-feeds-dialog:not([open]) {
+  display: none;
+}
+
+.ordinary-feeds-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+/* shadcn's data-open:fade-in-0 zoom-in-95. */
+.ordinary-feeds-dialog[open] {
+  animation: ordinary-feeds-dialog-in 150ms ease-out;
+}
+
+.ordinary-feeds-dialog[open]::backdrop {
+  animation: ordinary-feeds-dialog-fade 150ms ease-out;
+}
+
+@keyframes ordinary-feeds-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes ordinary-feeds-dialog-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ordinary-feeds-dialog[open],
+  .ordinary-feeds-dialog[open]::backdrop {
+    animation: none;
+  }
+}
+
+.ordinary-feeds-dialog *,
+.ordinary-feeds-dialog *::before,
+.ordinary-feeds-dialog *::after {
+  box-sizing: border-box;
+}
+
+/* Equal side columns keep the video centred whatever sits beside it. */
+.ordinary-feeds-dialog__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 16px;
+  height: 100%;
+  padding: 16px;
+}
+
+/* Full screen height (less the layout's 16px padding), 9:16, shrunk only when
+   the screen is too narrow for that width. Sized from the viewport, not the
+   grid, so the box can't be squeezed into a crop; the video uses
+   object-fit: contain, so posts of any other shape are letterboxed, never cut. */
+.ordinary-feeds-dialog__stage {
+  --ordinary-feeds-stage-h: min(100vh - 32px, (100vw - 32px) * 16 / 9);
+  --ordinary-feeds-stage-h: min(100dvh - 32px, (100vw - 32px) * 16 / 9);
+  grid-column: 2;
+  position: relative;
+  height: var(--ordinary-feeds-stage-h);
+  width: calc(var(--ordinary-feeds-stage-h) * 9 / 16);
+  overflow: hidden;
+  border-radius: 8px;
+  background: #000;
+}
+
+/* Vertical Embla strip inside the stage, one full-height slide per post. */
+.ordinary-feeds-dialog__track {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  touch-action: pan-x pinch-zoom;
+}
+
+.ordinary-feeds-dialog__slide {
+  position: relative;
+  flex: 0 0 100%;
+  min-height: 0;
+}
+
+.ordinary-feeds-dialog__poster {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ordinary-feeds-dialog__video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+}
+
+.ordinary-feeds-dialog__play {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ordinary-feeds-dialog.is-paused .ordinary-feeds-dialog__play {
+  display: flex;
+}
+
+.ordinary-feeds-dialog__play svg {
+  width: 64px;
+  height: 64px;
+  padding: 18px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.ordinary-feeds-dialog__mute {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ordinary-feeds-dialog__icon--muted {
+  display: none;
+}
+
+.ordinary-feeds-dialog.is-muted .ordinary-feeds-dialog__icon--muted {
+  display: block;
+}
+
+.ordinary-feeds-dialog.is-muted .ordinary-feeds-dialog__icon--unmuted {
+  display: none;
+}
+
+.ordinary-feeds-dialog__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ordinary-feeds-dialog__progress-bar {
+  width: 0;
+  height: 100%;
+  background: #fff;
+}
+
+/* Account, caption and product. */
+.ordinary-feeds-dialog__info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ordinary-feeds-dialog__info--side {
+  justify-self: end;
+  width: 256px;
+  max-width: 100%;
+  padding-bottom: 8px;
+}
+
+.ordinary-feeds-dialog__info--overlay {
+  display: none;
+}
+
+.ordinary-feeds-dialog__details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ordinary-feeds-dialog__account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ordinary-feeds-dialog__account:hover .ordinary-feeds-dialog__username {
+  text-decoration: underline;
+}
+
+.ordinary-feeds-dialog__avatar {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: linear-gradient(45deg, #fbbf24, #ec4899, #9333ea);
+}
+
+.ordinary-feeds-dialog__avatar svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ordinary-feeds-dialog__avatar-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ordinary-feeds-dialog__username {
+  font-weight: 600;
+}
+
+.ordinary-feeds-dialog__caption {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ordinary-feeds-dialog__caption.is-expanded {
+  display: block;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* "Shop this post": stacked beside the video on wide screens, a swipeable
+   row over it on narrow ones. */
+.ordinary-feeds-dialog__products {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ordinary-feeds-dialog__products-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ordinary-feeds-dialog__products-heading svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ordinary-feeds-dialog__products-count {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ordinary-feeds-dialog__product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.ordinary-feeds-dialog__product {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+
+.ordinary-feeds-dialog__product:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ordinary-feeds-dialog__product-image {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.ordinary-feeds-dialog__product-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ordinary-feeds-dialog__product-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ordinary-feeds-dialog__product-title {
+  color: inherit;
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.ordinary-feeds-dialog__product-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  font-size: 13px;
+}
+
+.ordinary-feeds-dialog__product-from {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.ordinary-feeds-dialog__product-amount {
+  font-weight: 600;
+}
+
+.ordinary-feeds-dialog__product-amount.is-sale {
+  color: #fca5a5;
+}
+
+.ordinary-feeds-dialog__product-price s {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.ordinary-feeds-dialog__product-soldout {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* The title link covers the whole card, so the card stays one click target. */
+.ordinary-feeds-dialog__product-title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.ordinary-feeds-dialog__product-title:focus-visible {
+  outline: none;
+}
+
+.ordinary-feeds-dialog__product:focus-within {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Sits above the stretched link so it gets its own clicks. */
+.ordinary-feeds-dialog__product-add {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.ordinary-feeds-dialog__product-add:hover {
+  transform: scale(1.06);
+}
+
+.ordinary-feeds-dialog__product-add:disabled {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
+}
+
+.ordinary-feeds-dialog__product-add svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ordinary-feeds-dialog__product-arrow {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+}
+
+/* Round translucent controls over the dark backdrop. */
+.ordinary-feeds-dialog__round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.ordinary-feeds-dialog__round:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ordinary-feeds-dialog__round:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.ordinary-feeds-dialog__round svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ordinary-feeds-dialog__round--lg {
+  width: 48px;
+  height: 48px;
+}
+
+.ordinary-feeds-dialog__round--lg svg {
+  width: 24px;
+  height: 24px;
+}
+
+.ordinary-feeds-dialog__actions {
+  justify-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.ordinary-feeds-dialog__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ordinary-feeds-dialog__action[hidden] {
+  display: none;
+}
+
+.ordinary-feeds-dialog__likes {
+  cursor: default;
+}
+
+.ordinary-feeds-dialog__likes-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+}
+
+.ordinary-feeds-dialog__likes-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.ordinary-feeds-dialog__likes-count {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ordinary-feeds-dialog__action-label {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.ordinary-feeds-dialog__nav {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transform: translateY(-50%);
+}
+
+.ordinary-feeds-dialog__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+}
+
+/* Narrow screens: side info and prev/next hidden, the video fills the width,
+   caption and actions sit over it. */
+@media (max-width: 767px) {
+  /* Side columns collapse (and no gaps) so the stage gets the full width.
+     The single row is only as tall as the stage and centred vertically. */
+  .ordinary-feeds-dialog__layout {
+    grid-template-columns: 0 minmax(0, 1fr) 0;
+    grid-template-rows: auto;
+    align-content: center;
+    align-items: center;
+    justify-items: center;
+    gap: 0;
+  }
+
+  /* Explicit row, or auto-placement would push it below the actions. */
+  .ordinary-feeds-dialog__stage {
+    grid-row: 1;
+  }
+
+  .ordinary-feeds-dialog__info--side,
+  .ordinary-feeds-dialog__nav {
+    display: none;
+  }
+
+  .ordinary-feeds-dialog__info--overlay {
+    display: flex;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 64px 88px 16px 16px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  }
+
+  /* Shares the stage's grid cell, pinned over its bottom-right corner. */
+  .ordinary-feeds-dialog__actions {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    justify-self: end;
+    position: relative;
+    z-index: 1;
+    margin: 0 16px 24px 0;
+  }
+
+  .ordinary-feeds-dialog__info--overlay .ordinary-feeds-dialog__product-list {
+    flex-direction: row;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .ordinary-feeds-dialog__info--overlay .ordinary-feeds-dialog__product {
+    flex: 0 0 224px;
+    scroll-snap-align: start;
+  }
+}

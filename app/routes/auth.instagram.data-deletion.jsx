@@ -1,12 +1,59 @@
 import { deleteItems, readItems } from "@directus/sdk";
 import directus from "app/directus.server";
-import { IG_ACCOUNTS, IG_MEDIA } from "app/lib/constants";
+import { IG_ACCOUNTS, IG_MEDIA, SHOPS } from "app/lib/constants";
 import crypto from "node:crypto";
+import {
+  readAccountTaggedProductIds,
+  syncProductPostMetafields,
+} from "app/lib/product-post-metafields.server";
+import { unauthenticated } from "app/shopify.server";
 import {
   getAppUrl,
   instagramUserFilter,
   parseSignedRequest,
 } from "app/lib/instagram.server";
+
+// The shops these accounts belong to. Accounts lose their `shop` link on
+// disconnect, so those are matched by the shop handle their id ends with
+// (`<instagram id>-<shop handle>`).
+async function accountShops(accounts) {
+  const shops = new Set(accounts.map((a) => a.shop).filter(Boolean));
+  const handles = accounts
+    .filter((a) => !a.shop)
+    .map((a) => String(a.id).split("-").slice(1).join("-"))
+    .filter(Boolean);
+
+  if (handles.length) {
+    const rows = await directus.request(
+      readItems(SHOPS, {
+        filter: { shop_handle: { _in: handles } },
+        fields: ["shop_domain"],
+        limit: -1,
+      }),
+    );
+    rows.forEach((r) => shops.add(r.shop_domain));
+  }
+  return [...shops];
+}
+
+// Removes the deleted posts from each shop's product pages: with their tags
+// gone, re-syncing the tagged products clears (or shrinks) their
+// `$app.instagram_posts` metafield. Runs without a request, on the shop's
+// offline session. Best effort: the Directus data is already deleted, which
+// is what Meta requires, so failures are only logged.
+async function clearProductPosts(shops, productIds) {
+  for (const shop of shops) {
+    try {
+      const { admin } = await unauthenticated.admin(shop);
+      await syncProductPostMetafields(admin, shop, productIds);
+    } catch (err) {
+      console.error(
+        `[instagram] product metafield cleanup failed for ${shop}`,
+        err,
+      );
+    }
+  }
+}
 
 // Meta "Data deletion request URL": deletes everything stored for the
 // Instagram user, then answers with a confirmation code and a status URL that
@@ -23,22 +70,28 @@ export async function action({ request }) {
     const accounts = await directus.request(
       readItems(IG_ACCOUNTS, {
         filter: instagramUserFilter(data.user_id),
-        fields: ["id", "media"],
+        fields: ["id", "media", "shop"],
         limit: -1,
       }),
     );
+
+    // Read before the posts (and their product tags) are deleted below.
+    const accountIds = accounts.map((a) => a.id);
+    const [taggedProductIds, shops] = await Promise.all([
+      readAccountTaggedProductIds(accountIds),
+      accountShops(accounts),
+    ]);
 
     const mediaIds = accounts.flatMap((a) => a.media ?? []);
     if (mediaIds.length) {
       await directus.request(deleteItems(IG_MEDIA, mediaIds));
     }
     if (accounts.length) {
-      await directus.request(
-        deleteItems(
-          IG_ACCOUNTS,
-          accounts.map((a) => a.id),
-        ),
-      );
+      await directus.request(deleteItems(IG_ACCOUNTS, accountIds));
+    }
+
+    if (taggedProductIds.length) {
+      await clearProductPosts(shops, taggedProductIds);
     }
   } catch (err) {
     console.error("[instagram] data deletion failed", err);
