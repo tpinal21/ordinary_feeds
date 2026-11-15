@@ -109,6 +109,8 @@ const METRIC_TILES = [
   },
   {
     key: "orders",
+    // Revenue attribution is a Plus feature.
+    access: "revenue",
     label: "Orders",
     help: "Orders with a product added to cart from a feed",
     value: ({ revenue }) =>
@@ -116,6 +118,8 @@ const METRIC_TILES = [
   },
   {
     key: "revenue",
+    // Revenue attribution is a Plus feature.
+    access: "revenue",
     label: "Revenue",
     help: "Sales of products added to cart from a feed, after line discounts",
     value: ({ revenue }) => formatRevenue(revenue),
@@ -251,10 +255,19 @@ const MetricTile = ({ tile, metrics, loading }) => (
         {tile.label}
       </button>
       {loading ? (
-        <span className="h-5 w-12 rounded bg-neutral-200 animate-pulse" />
+        <span className="h-4.75 w-12 rounded bg-neutral-200 animate-pulse" />
+      ) : metrics && !metrics.access?.[tile.access ?? "metrics"] ? (
+        // Held back by the plan (api.metrics.jsx); still recorded meanwhile.
+        <a
+          href="/plans"
+          className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:underline"
+        >
+          <s-icon type="lock" size="small" />
+          {tile.access === "revenue" ? "Plus" : "Pro"}
+        </a>
       ) : (
         <span className="text-sm font-semibold tabular-nums truncate">
-          {metrics ? tile.value(metrics) : "–"}
+          {metrics ? tile.value(metrics) : "-"}
         </span>
       )}
     </div>

@@ -12,6 +12,13 @@ export const action = async ({ request }) => {
         status: "UNINSTALLED",
         uninstalled_at: new Date().toISOString(),
         session: null,
+        // Shopify cancels the app's subscription on uninstall.
+        plan: "FREE",
+        plan_interval: null,
+        subscription_id: null,
+        subscription_status: null,
+        trial_ends_at: null,
+        plan_updated_at: new Date().toISOString(),
       }),
     );
   } catch (err) {

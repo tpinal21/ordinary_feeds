@@ -125,7 +125,7 @@ export default function CreateFeed() {
 
   if (!SUPPORTED_FEED_TYPES.includes(type)) {
     return (
-      <s-page heading="Heading" inlineSize="large">
+      <s-page heading={`Create ${type} feed`} inlineSize="large">
         <s-banner tone="info" heading={`${type} feeds aren't available yet`}>
           <s-paragraph>
             Pick another style for now — this one is on the way.
@@ -136,7 +136,7 @@ export default function CreateFeed() {
   }
 
   return (
-    <s-page heading="Heading" inlineSize="large">
+    <s-page heading={`Create ${type} feed`} inlineSize="large">
       <s-button
         slot="primary-action"
         loading={fetchingGalleries || isCreating}
@@ -145,7 +145,7 @@ export default function CreateFeed() {
       >
         Create
       </s-button>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 pb-16">
         {isProductGallery && (
           <ProductPreviewBar
             product={previewProduct.product}

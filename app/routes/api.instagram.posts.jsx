@@ -7,6 +7,10 @@ import {
   readTaggedProductIds,
   syncProductPostMetafields,
 } from "app/lib/product-post-metafields.server";
+import {
+  getShopEntitlements,
+  planLimitResponse,
+} from "app/lib/entitlements.server";
 import { authenticate } from "../shopify.server";
 
 const MAX_PER_PAGE = 50;
@@ -240,6 +244,36 @@ export async function action({ request }) {
         { success: false, error: "media_not_owned" },
         { status: 403 },
       );
+    }
+
+    // The plan's tagged-post limit, counted as it would stand after this
+    // save: the account's tagged posts this save doesn't touch, plus the
+    // ones it leaves tagged. Untagging is always allowed.
+    const entitlements = await getShopEntitlements(shopDomain);
+    const maxTagged = entitlements.limits.maxTaggedPosts;
+    if (Number.isFinite(maxTagged)) {
+      const saving = new Set(media.map((m) => m.id));
+      const taggedNow = await directus.request(
+        readItems(IG_MEDIA, {
+          filter: {
+            _and: [
+              { instagram_account: { _eq: account.id } },
+              { products: { _some: { id: { _nnull: true } } } },
+            ],
+          },
+          fields: ["id"],
+          limit: -1,
+        }),
+      );
+      const before = taggedNow.length;
+      const after =
+        taggedNow.filter((m) => !saving.has(m.id)).length +
+        media.filter((m) => m.products.length).length;
+      // Only a save that adds tagged posts past the limit is refused, so a
+      // shop over it (after a downgrade) can still edit and untag.
+      if (after > maxTagged && after > before) {
+        return planLimitResponse("maxTaggedPosts", entitlements);
+      }
     }
 
     // Tags as they were before this save, so products untagged by it get

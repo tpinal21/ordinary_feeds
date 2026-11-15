@@ -61,6 +61,10 @@ export async function getShopDetails(shopDomain) {
         "uninstalled_at",
         "theme_extension_enabled",
         "theme_extension_checked_at",
+        // The plan, so any page can show limits and upgrade prompts.
+        "plan",
+        "plan_interval",
+        "trial_ends_at",
         // Only what the admin UI reads — this goes to the browser, so never
         // include `access_token`.
         "instagram_account.status",

@@ -3,6 +3,10 @@ import directus from "app/directus.server";
 import { FEEDS, SHOPS } from "app/lib/constants";
 import { syncFeedMetaobject } from "app/lib/feed-metaobjects.server";
 import { galleryAllowedOnPage } from "app/lib/feeds";
+import {
+  getShopEntitlements,
+  planLimitResponse,
+} from "app/lib/entitlements.server";
 import { galleryNotFound, ownsGallery } from "app/lib/galleries.server";
 import { badRequest, readJsonBody } from "app/lib/http.server";
 import { deleteMetaobjects } from "app/lib/post-metaobjects.server";
@@ -10,10 +14,12 @@ import { authenticate } from "../shopify.server";
 
 // The feed id comes from the URL and the writes run with an admin token, so
 // check the feed actually belongs to this shop before touching it.
-// Resolves to the shop's feed `{ id, page }` with this id, or null.
+// Resolves to the shop's feed `{ id, page, gallery }` with this id, or null.
 async function ownsFeed(shopDomain, feedId) {
   const shop = await directus.request(
-    readItem(SHOPS, shopDomain, { fields: ["feeds.id", "feeds.page"] }),
+    readItem(SHOPS, shopDomain, {
+      fields: ["feeds.id", "feeds.page", "feeds.gallery"],
+    }),
   );
   return (
     shop?.feeds?.find((feed) => String(feed.id) === String(feedId)) ?? null
@@ -48,6 +54,16 @@ export async function action({ request, params }) {
       if (!owned) return galleryNotFound();
       if (!galleryAllowedOnPage(owned.type, existing.page)) {
         return badRequest("gallery_not_allowed_on_page");
+      }
+      // Only a switch to a PRODUCT gallery is a new use of the feature: a
+      // feed that already had one (from before a downgrade) can still be
+      // saved, and the storefront is what stops it showing.
+      const switching = String(existing.gallery ?? "") !== String(gallery.id);
+      if (owned.type === "PRODUCT" && switching) {
+        const entitlements = await getShopEntitlements(shopDomain);
+        if (!entitlements.limits.productGalleries) {
+          return planLimitResponse("productGalleries", entitlements);
+        }
       }
     }
 

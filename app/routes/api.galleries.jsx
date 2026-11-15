@@ -13,6 +13,10 @@ import {
   toIgMedia,
   toPostLimit,
 } from "app/lib/galleries.server";
+import {
+  getShopEntitlements,
+  planLimitResponse,
+} from "app/lib/entitlements.server";
 import { syncGalleryMetaobject } from "app/lib/gallery-metaobjects.server";
 import {
   readAccountTaggedProductIds,
@@ -64,6 +68,13 @@ export async function action({ request }) {
   if (!GALLERY_TYPES.includes(type)) return badRequest("invalid_type");
 
   try {
+    if (type === "PRODUCT") {
+      const entitlements = await getShopEntitlements(shopDomain);
+      if (!entitlements.limits.productGalleries) {
+        return planLimitResponse("productGalleries", entitlements);
+      }
+    }
+
     const account = await readShopAccount(shopDomain);
     if (!account) return missingAccount();
 

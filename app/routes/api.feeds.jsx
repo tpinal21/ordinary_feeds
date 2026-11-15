@@ -1,4 +1,4 @@
-import { createItem, readItems } from "@directus/sdk";
+import { aggregate, createItem, readItems } from "@directus/sdk";
 import directus from "app/directus.server";
 import { FEEDS } from "app/lib/constants";
 import {
@@ -8,6 +8,10 @@ import {
   galleryAllowedOnPage,
 } from "app/lib/feeds";
 import { syncFeedMetaobject } from "app/lib/feed-metaobjects.server";
+import {
+  getShopEntitlements,
+  planLimitResponse,
+} from "app/lib/entitlements.server";
 import { galleryNotFound, ownsGallery } from "app/lib/galleries.server";
 import { getShopFeeds } from "app/lib/shops.server";
 import { badRequest, readJsonBody } from "app/lib/http.server";
@@ -40,6 +44,17 @@ async function nextFeedLabel(shopDomain, type, pageCode) {
   return `${prefix}${String(seq + 1).padStart(LABEL_PAD, "0")}`;
 }
 
+// How many feeds the shop has, for the plan's feed limit.
+async function countFeeds(shopDomain) {
+  const [row] = await directus.request(
+    aggregate(FEEDS, {
+      aggregate: { count: "*" },
+      query: { filter: { shop: { _eq: shopDomain } } },
+    }),
+  );
+  return Number(row?.count ?? 0) || 0;
+}
+
 export async function loader({ request }) {
   const { session } = await authenticate.admin(request);
   const shopDomain = session.shop;
@@ -69,12 +84,20 @@ export async function action({ request }) {
   if (!FEED_PAGE_CODES.includes(page)) return badRequest("invalid_page");
 
   try {
+    const entitlements = await getShopEntitlements(shopDomain);
+    if ((await countFeeds(shopDomain)) >= entitlements.limits.maxFeeds) {
+      return planLimitResponse("maxFeeds", entitlements);
+    }
+
     // The gallery id comes from the client; it has to be this shop's.
     if (gallery?.id) {
       const owned = await ownsGallery(shopDomain, gallery.id);
       if (!owned) return galleryNotFound();
       if (!galleryAllowedOnPage(owned.type, FEED_PAGES[page])) {
         return badRequest("gallery_not_allowed_on_page");
+      }
+      if (owned.type === "PRODUCT" && !entitlements.limits.productGalleries) {
+        return planLimitResponse("productGalleries", entitlements);
       }
     }
 

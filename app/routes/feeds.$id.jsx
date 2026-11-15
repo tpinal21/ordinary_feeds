@@ -132,7 +132,7 @@ function FeedsEditForm({ feedDetails }) {
   );
 
   return (
-    <s-page heading="Heading" inlineSize="large">
+    <s-page heading={`Edit ${feedDetails?.label} feed`} inlineSize="large">
       <s-button
         slot="primary-action"
         loading={isSaving}
@@ -141,7 +141,7 @@ function FeedsEditForm({ feedDetails }) {
       >
         Save
       </s-button>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 pb-16">
         {isProductGallery && (
           <ProductPreviewBar
             product={previewProduct.product}

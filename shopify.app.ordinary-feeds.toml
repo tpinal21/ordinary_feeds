@@ -19,6 +19,10 @@ api_version = "2026-07"
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/subscriptions_update"
+  topics = [ "app_subscriptions/update" ]
+
 [access.admin]
 direct_api_mode = "offline"
 embedded_app_direct_api_access = true
