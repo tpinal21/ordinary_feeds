@@ -67,6 +67,10 @@ export const CAROUSEL_FEED_DEFAULTS = {
   slides_per_view: 7,
   speed: 1,
   auto_scroll: false,
+  // Prev / next arrows: "inside" overlays them on the slides, "outside" moves
+  // them into a gutter on either side of the strip, "outside_full" pushes them
+  // past the strip's edges without narrowing it.
+  arrow_position: "inside",
 };
 
 export const GRID_FEED_DEFAULTS = {

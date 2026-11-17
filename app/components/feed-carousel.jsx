@@ -32,6 +32,14 @@ export function FeedCarousel({ media = [], settings }) {
   const username = useInstagramUsername();
   const posts = media.filter((m) => typeof m !== "number");
   const onPostClick = usePostClick(posts, setOpenIndex);
+  const showArrows = !settings?.auto_scroll;
+  // "inside" | "outside" | "outside_full" — see carousel.css.
+  const arrowPosition = showArrows ? settings?.arrow_position : undefined;
+  const arrowClasses =
+    {
+      outside: ["left-0", "right-0"],
+      outside_full: ["-left-10", "-right-10"],
+    }[arrowPosition] || [];
 
   // Slide widths animate when the merchant changes "slides per view" (see
   // carousel.css). Embla reads the slides with offsetWidth once and derives the
@@ -76,6 +84,8 @@ export function FeedCarousel({ media = [], settings }) {
     <Carousel
       className="ordinary-feeds-carousel"
       style={carouselVars(settings)}
+      // carousel.css reserves a gutter for the arrows when they sit outside.
+      data-arrows={arrowClasses.length ? arrowPosition : undefined}
       opts={{ loop: settings?.loop, dragFree: settings?.auto_scroll }}
       setApi={setApi}
       plugins={[
@@ -110,10 +120,10 @@ export function FeedCarousel({ media = [], settings }) {
           </CarouselItem>
         ))}
       </CarouselContent>
-      {!settings?.auto_scroll && (
+      {showArrows && (
         <>
-          <CarouselPrevious />
-          <CarouselNext />
+          <CarouselPrevious className={arrowClasses[0]} />
+          <CarouselNext className={arrowClasses[1]} />
         </>
       )}
       <PostDialog

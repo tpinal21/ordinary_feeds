@@ -14,6 +14,7 @@
   assign cs_speed = feed_settings.speed | default: 1
   assign cs_gap = feed_settings.item_gap | default: 8, allow_false: true
   assign cs_radius = feed_settings.border_radius | default: 8, allow_false: true
+  assign cs_arrow_position = feed_settings.arrow_position | default: 'inside'
 -%}
 <div
   id="ordinary-feeds-{{ block.id }}"
@@ -26,6 +27,9 @@
   data-feed-id="{{ feed.system.handle }}"
   data-loop="{{ cs_loop }}"
   data-auto-scroll="{{ cs_auto_scroll }}"
+  {% if cs_auto_scroll == false %}
+    {% if cs_arrow_position == 'outside' or cs_arrow_position == 'outside_full' %}data-arrows="{{ cs_arrow_position }}"{% endif %}
+  {% endif %}
   data-speed="{{ cs_speed }}"
   data-media-auto-play="{{ cs_media_auto_play }}"
   data-click-action="{{ click_action | escape }}"

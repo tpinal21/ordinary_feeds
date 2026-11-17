@@ -19,6 +19,12 @@ const PER_VIEW_TOOLTIP = (
   </>
 );
 
+const ARROW_POSITIONS = [
+  { label: "Inside the slides", value: "inside" },
+  { label: "Outside the slides", value: "outside" },
+  { label: "Outside, keep full width", value: "outside_full" },
+];
+
 export default function CarouselSettingsForm({ page }) {
   const { setValue, control, watch, resetField } = useFormContext();
 
@@ -96,6 +102,19 @@ export default function CarouselSettingsForm({ page }) {
             tooltip={PER_VIEW_TOOLTIP}
             options={[3, 4, 5, 6, 7, 8]}
           />
+        </div>
+      </s-section>
+
+      <s-section heading="Style settings">
+        <div className="flex flex-col gap-2">
+          {/* Auto-scrolling carousels have no arrows to place. */}
+          {!autoScroll && (
+            <SelectField
+              name="settings.arrow_position"
+              label="Arrow position"
+              options={ARROW_POSITIONS}
+            />
+          )}
 
           <AppearanceFields />
         </div>

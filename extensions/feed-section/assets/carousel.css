@@ -108,3 +108,28 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* Arrows outside the strip: the root reserves a gutter on each side and the
+   arrows sit in it (left/right 0) instead of over the first and last slide.
+   Wide enough for the 32px button plus a little air. */
+.ordinary-feeds-carousel[data-arrows="outside"] {
+  padding-inline: 40px;
+}
+
+.ordinary-feeds-carousel[data-arrows="outside"] .ordinary-feeds-carousel__btn--prev {
+  left: 0;
+}
+
+.ordinary-feeds-carousel[data-arrows="outside"] .ordinary-feeds-carousel__btn--next {
+  right: 0;
+}
+
+/* Arrows outside the strip without narrowing it: no gutter, the arrows are
+   pushed 40px past each edge. They need that much room around the block. */
+.ordinary-feeds-carousel[data-arrows="outside_full"] .ordinary-feeds-carousel__btn--prev {
+  left: -40px;
+}
+
+.ordinary-feeds-carousel[data-arrows="outside_full"] .ordinary-feeds-carousel__btn--next {
+  right: -40px;
+}

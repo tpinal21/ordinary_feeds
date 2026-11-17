@@ -145,7 +145,7 @@ function CarouselItem({ className, ...props }) {
   );
 }
 
-function CarouselPrevious({ ...props }) {
+function CarouselPrevious({ className, ...props }) {
   const { scrollPrev, canScrollPrev } = useCarousel();
 
   return (
@@ -153,7 +153,10 @@ function CarouselPrevious({ ...props }) {
       type="button"
       disabled={!canScrollPrev}
       onClick={scrollPrev}
-      className="cursor-pointer hover:bg-neutral-400/50 bg-white/40 backdrop-blur-sm absolute z-10 touch-manipulation rounded-full p-1 top-1/2 left-2 -translate-y-1/2"
+      className={cn(
+        "cursor-pointer hover:bg-neutral-500/50 bg-neutral-200/50 transition-colors backdrop-blur-sm absolute z-10 touch-manipulation rounded-full p-1 top-1/2 left-2 -translate-y-1/2",
+        className,
+      )}
       {...props}
     >
       <ChevronLeftIcon />
@@ -162,7 +165,7 @@ function CarouselPrevious({ ...props }) {
   );
 }
 
-function CarouselNext({ ...props }) {
+function CarouselNext({ className, ...props }) {
   const { scrollNext, canScrollNext } = useCarousel();
 
   return (
@@ -170,7 +173,10 @@ function CarouselNext({ ...props }) {
       type="button"
       disabled={!canScrollNext}
       onClick={scrollNext}
-      className="cursor-pointer hover:bg-neutral-400/50 bg-white/40 backdrop-blur-sm absolute touch-manipulation rounded-full p-1 top-1/2 right-2 -translate-y-1/2"
+      className={cn(
+        "cursor-pointer hover:bg-neutral-500/50 bg-neutral-200/50 transition-colors backdrop-blur-sm absolute z-10 touch-manipulation rounded-full p-1 top-1/2 right-2 -translate-y-1/2",
+        className,
+      )}
       {...props}
     >
       <ChevronRightIcon />

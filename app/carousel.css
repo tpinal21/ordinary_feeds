@@ -54,3 +54,14 @@
 .ordinary-feeds-carousel__media {
   border-radius: var(--ordinary-feeds-radius);
 }
+
+/* Arrows outside the strip: the root reserves a gutter on each side and the
+   arrows sit in it (left/right 0) instead of over the first and last slide.
+   Wide enough for the 32px button plus a little air. */
+.ordinary-feeds-carousel[data-arrows="outside"] {
+  padding-inline: 40px;
+}
+
+/* Arrows outside the strip without narrowing it: no gutter, the arrows are
+   pushed 40px past each edge. They need that much room around the block.
+   Nothing to do here: feed-carousel.jsx places them with -left-10 / -right-10. */
